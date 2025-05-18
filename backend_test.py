@@ -66,7 +66,7 @@ class PrismFinanceAPITest:
     def test_01_api_health(self):
         """Test if the API is accessible"""
         try:
-            response = requests.get(f"{BACKEND_URL}/api/suppliers")
+            response = requests.get(f"{BACKEND_URL}/api/suppliers", headers=self.headers)
             print(f"✅ API is accessible at {BACKEND_URL}")
             return True
         except Exception as e:
@@ -75,7 +75,7 @@ class PrismFinanceAPITest:
 
     def test_02_get_suppliers(self):
         """Test getting suppliers list"""
-        response = requests.get(f"{API_URL}/suppliers")
+        response = requests.get(f"{API_URL}/suppliers", headers=self.headers)
         print(f"GET /suppliers status code: {response.status_code}")
         
         if response.status_code == 200:
@@ -90,7 +90,7 @@ class PrismFinanceAPITest:
 
     def test_03_create_supplier(self):
         """Test creating a new supplier"""
-        response = requests.post(f"{API_URL}/suppliers", json=self.test_supplier)
+        response = requests.post(f"{API_URL}/suppliers", json=self.test_supplier, headers=self.headers)
         print(f"POST /suppliers status code: {response.status_code}")
         
         if response.status_code == 200:
@@ -110,7 +110,7 @@ class PrismFinanceAPITest:
             if not self.test_03_create_supplier():
                 return False
             
-        response = requests.get(f"{API_URL}/suppliers/{self.created_supplier_id}")
+        response = requests.get(f"{API_URL}/suppliers/{self.created_supplier_id}", headers=self.headers)
         print(f"GET /suppliers/{self.created_supplier_id} status code: {response.status_code}")
         
         if response.status_code == 200:
@@ -132,7 +132,7 @@ class PrismFinanceAPITest:
         updated_data = self.test_supplier.copy()
         updated_data["name"] = f"Updated Supplier {self.timestamp}"
         
-        response = requests.put(f"{API_URL}/suppliers/{self.created_supplier_id}", json=updated_data)
+        response = requests.put(f"{API_URL}/suppliers/{self.created_supplier_id}", json=updated_data, headers=self.headers)
         print(f"PUT /suppliers/{self.created_supplier_id} status code: {response.status_code}")
         
         if response.status_code == 200:
