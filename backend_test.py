@@ -160,7 +160,10 @@ class PrismFinanceAPITest:
             'name': f'Test Template {self.timestamp}'
         }
         
-        response = requests.post(f"{API_URL}/contract-templates", files=files, data=data)
+        # For multipart/form-data, we need to remove Content-Type from headers
+        headers = {'Authorization': f'Bearer {self.token}'} if self.token else {}
+        
+        response = requests.post(f"{API_URL}/contract-templates", files=files, data=data, headers=headers)
         print(f"POST /contract-templates status code: {response.status_code}")
         
         # Clean up the test file
@@ -179,7 +182,7 @@ class PrismFinanceAPITest:
 
     def test_07_get_contract_templates(self):
         """Test getting contract templates"""
-        response = requests.get(f"{API_URL}/contract-templates")
+        response = requests.get(f"{API_URL}/contract-templates", headers=self.headers)
         print(f"GET /contract-templates status code: {response.status_code}")
         
         if response.status_code == 200:
@@ -212,7 +215,10 @@ class PrismFinanceAPITest:
             })
         }
         
-        response = requests.post(f"{API_URL}/contracts/generate", data=data)
+        # For multipart/form-data, we need to remove Content-Type from headers
+        headers = {'Authorization': f'Bearer {self.token}'} if self.token else {}
+        
+        response = requests.post(f"{API_URL}/contracts/generate", data=data, headers=headers)
         print(f"POST /contracts/generate status code: {response.status_code}")
         
         if response.status_code == 200:
@@ -227,7 +233,7 @@ class PrismFinanceAPITest:
 
     def test_09_get_contracts(self):
         """Test getting contracts"""
-        response = requests.get(f"{API_URL}/contracts")
+        response = requests.get(f"{API_URL}/contracts", headers=self.headers)
         print(f"GET /contracts status code: {response.status_code}")
         
         if response.status_code == 200:
