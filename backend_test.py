@@ -8,15 +8,14 @@ from datetime import datetime
 BACKEND_URL = "https://6889fd20-755d-4ec7-b787-a13d7a3c9ecc.preview.emergentagent.com"
 API_URL = f"{BACKEND_URL}/api"
 
-class PrismFinanceAPITest(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
+class PrismFinanceAPITest:
+    def __init__(self):
         # Generate unique test data
-        cls.timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        cls.test_supplier = {
-            "name": f"Test Supplier {cls.timestamp}",
-            "siret": f"SIRET{cls.timestamp}",
-            "vat_number": f"VAT{cls.timestamp}",
+        self.timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        self.test_supplier = {
+            "name": f"Test Supplier {self.timestamp}",
+            "siret": f"SIRET{self.timestamp}",
+            "vat_number": f"VAT{self.timestamp}",
             "profession": "Test Profession",
             "address": "123 Test Street",
             "postal_code": "75001",
@@ -25,10 +24,10 @@ class PrismFinanceAPITest(unittest.TestCase):
             "iban": f"FR7630001007941234567890185",
             "bic": "BNPAFRPP",
             "vat_rates": [20.0],
-            "emails": [f"test{cls.timestamp}@example.com"]
+            "emails": [f"test{self.timestamp}@example.com"]
         }
-        cls.created_supplier_id = None
-        cls.created_template_id = None
+        self.created_supplier_id = None
+        self.created_template_id = None
 
     def test_01_api_health(self):
         """Test if the API is accessible"""
@@ -63,7 +62,7 @@ class PrismFinanceAPITest(unittest.TestCase):
         if response.status_code == 200:
             print("✅ POST /suppliers successful")
             supplier = response.json()
-            self.__class__.created_supplier_id = supplier["id"]
+            self.created_supplier_id = supplier["id"]
             print(f"✅ Created supplier with ID: {self.created_supplier_id}")
             return True
         else:
@@ -73,7 +72,7 @@ class PrismFinanceAPITest(unittest.TestCase):
 
     def test_04_get_supplier_by_id(self):
         """Test getting a supplier by ID"""
-        if not self.__class__.created_supplier_id:
+        if not self.created_supplier_id:
             if not self.test_03_create_supplier():
                 return False
             
@@ -92,7 +91,7 @@ class PrismFinanceAPITest(unittest.TestCase):
 
     def test_05_update_supplier(self):
         """Test updating a supplier"""
-        if not self.__class__.created_supplier_id:
+        if not self.created_supplier_id:
             if not self.test_03_create_supplier():
                 return False
             
@@ -136,7 +135,7 @@ class PrismFinanceAPITest(unittest.TestCase):
         if response.status_code == 200:
             print("✅ POST /contract-templates successful")
             template = response.json()
-            self.__class__.created_template_id = template["id"]
+            self.created_template_id = template["id"]
             print(f"✅ Created template with ID: {self.created_template_id}")
             return True
         else:
@@ -161,11 +160,11 @@ class PrismFinanceAPITest(unittest.TestCase):
 
     def test_08_generate_contract(self):
         """Test generating a contract"""
-        if not self.__class__.created_supplier_id:
+        if not self.created_supplier_id:
             if not self.test_03_create_supplier():
                 return False
                 
-        if not self.__class__.created_template_id:
+        if not self.created_template_id:
             if not self.test_06_upload_contract_template():
                 return False
             
