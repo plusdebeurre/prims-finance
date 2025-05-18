@@ -14,17 +14,20 @@ class PrismFinanceAPITest:
         self.timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         self.test_supplier = {
             "name": f"Test Supplier {self.timestamp}",
-            "siret": f"SIRET{self.timestamp}",
-            "vat_number": f"VAT{self.timestamp}",
-            "profession": "Test Profession",
-            "address": "123 Test Street",
-            "postal_code": "75001",
-            "city": "Paris",
-            "country": "France",
-            "iban": f"FR7630001007941234567890185",
-            "bic": "BNPAFRPP",
-            "vat_rates": [20.0],
-            "emails": [f"test{self.timestamp}@example.com"]
+            "email": f"test{self.timestamp}@example.com",
+            "company_data": {
+                "name": f"Test Company {self.timestamp}",
+                "company_type": "SAS",
+                "address": "123 Test Street",
+                "postal_code": "75001",
+                "city": "Paris",
+                "country": "France",
+                "registration_number": f"REG{self.timestamp}",
+                "registration_city": "Paris",
+                "representative_name": "Test Representative",
+                "representative_role": "CEO",
+                "phone": "+33123456789"
+            }
         }
         self.created_supplier_id = None
         self.created_template_id = None
