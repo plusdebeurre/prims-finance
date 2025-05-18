@@ -95,10 +95,42 @@ class PrismFinanceAPITest:
 
     def test_03_create_supplier(self):
         """Test creating a new supplier"""
+        # First, let's check if we need to create a company
+        response = requests.get(f"{API_URL}/companies", headers=self.headers)
+        if response.status_code == 200:
+            companies = response.json()
+            if companies:
+                # Use the first company
+                company_id = companies[0]["id"]
+                self.test_supplier["company_id"] = company_id
+                print(f"✅ Using existing company with ID: {company_id}")
+            else:
+                # Create a company
+                company_data = {
+                    "name": f"Test Company {self.timestamp}",
+                    "address": "123 Test Street",
+                    "postal_code": "75001",
+                    "city": "Paris",
+                    "country": "France"
+                }
+                response = requests.post(f"{API_URL}/companies", json=company_data, headers=self.headers)
+                if response.status_code == 200 or response.status_code == 201:
+                    company = response.json()
+                    company_id = company["id"]
+                    self.test_supplier["company_id"] = company_id
+                    print(f"✅ Created company with ID: {company_id}")
+                else:
+                    print(f"❌ Failed to create company: {response.text}")
+                    return False
+        else:
+            print(f"❌ Failed to get companies: {response.text}")
+            # Try to continue without company ID
+        
+        # Now create the supplier
         response = requests.post(f"{API_URL}/suppliers", json=self.test_supplier, headers=self.headers)
         print(f"POST /suppliers status code: {response.status_code}")
         
-        if response.status_code == 200:
+        if response.status_code == 200 or response.status_code == 201:
             print("✅ POST /suppliers successful")
             supplier = response.json()
             self.created_supplier_id = supplier["id"]
