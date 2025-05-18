@@ -28,6 +28,40 @@ class PrismFinanceAPITest:
         }
         self.created_supplier_id = None
         self.created_template_id = None
+        self.token = None
+        self.headers = {'Content-Type': 'application/json'}
+        
+    def test_00_login(self):
+        """Test login with admin credentials"""
+        login_data = {
+            'username': 'admin@prismfinance.com',
+            'password': 'admin123'
+        }
+        
+        # Convert to form data format
+        form_data = requests.utils.urlencode(login_data)
+        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+        
+        response = requests.post(f"{API_URL}/auth/token", data=form_data, headers=headers)
+        print(f"POST /auth/token status code: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            self.token = data.get('access_token')
+            if self.token:
+                self.headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': f'Bearer {self.token}'
+                }
+                print("✅ Login successful, token obtained")
+                return True
+            else:
+                print("❌ Login response did not contain a token")
+                return False
+        else:
+            print(f"❌ Login failed with status code {response.status_code}")
+            print(f"Response: {response.text}")
+            return False
 
     def test_01_api_health(self):
         """Test if the API is accessible"""
