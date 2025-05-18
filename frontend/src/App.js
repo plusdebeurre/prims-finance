@@ -816,7 +816,7 @@ const TemplatesList = () => {
         <div className="px-4 py-5 sm:p-6">
           <h3 className="text-lg leading-6 font-medium text-gray-900">Upload New Template</h3>
           <div className="mt-2 max-w-xl text-sm text-gray-500">
-            <p>Upload a .docx file containing placeholders in the format {{VariableName}}.</p>
+            <p>Upload a .docx file containing placeholders in the format {"{{VariableName}}"}.</p>
           </div>
           <form onSubmit={handleSubmit} className="mt-5 sm:flex sm:items-center">
             <div className="w-full sm:max-w-xs">
