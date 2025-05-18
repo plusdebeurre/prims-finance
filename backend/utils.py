@@ -3,6 +3,7 @@ import io
 import base64
 import mammoth
 import os
+import uuid
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict, Any, Optional
