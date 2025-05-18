@@ -246,14 +246,14 @@ class PrismFinanceAPITest:
             
         # Prepare contract data
         contract_data = {
-            'name': f'Test Contract {self.timestamp}',
             'supplier_id': self.created_supplier_id,
             'template_id': self.created_template_id,
-            'status': 'Draft',
+            'status': 'draft',
             'variables': {
                 "variable1": "Test Value 1",
                 "variable2": "Test Value 2"
-            }
+            },
+            'client_company_id': self.test_supplier["client_company_id"]
         }
         
         response = requests.post(f"{API_URL}/contracts", json=contract_data, headers=self.headers)
