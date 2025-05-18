@@ -35,10 +35,10 @@ class PrismFinanceAPITest:
         self.headers = {'Content-Type': 'application/json'}
         
     def test_00_login(self):
-        """Test login with admin credentials"""
+        """Test login with supplier credentials"""
         login_data = {
-            'username': 'admin@example.com',
-            'password': 'admin123'
+            'username': 'supplier@example.com',
+            'password': 'supplier123'
         }
         
         headers = {'Content-Type': 'application/x-www-form-urlencoded'}
