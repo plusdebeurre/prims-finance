@@ -1,0 +1,12 @@
+This is a test contract template for {{SupplierName}}.
+
+The contract is between {{CustomerName}} and {{SupplierName}} for the services of {{ServiceType}}.
+
+Contract details:
+- Start date: {{StartDate}}
+- End date: {{EndDate}}
+- Rate: {{Rate}} € per {{RateUnit}}
+
+Signed by:
+{{CustomerName}}                     {{SupplierName}}
+
