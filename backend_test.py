@@ -38,11 +38,13 @@ class PrismFinanceAPITest:
             'password': 'admin123'
         }
         
-        # Convert to form data format
-        form_data = requests.utils.urlencode(login_data)
         headers = {'Content-Type': 'application/x-www-form-urlencoded'}
         
-        response = requests.post(f"{API_URL}/auth/token", data=form_data, headers=headers)
+        response = requests.post(
+            f"{API_URL}/auth/token", 
+            data=login_data,
+            headers=headers
+        )
         print(f"POST /auth/token status code: {response.status_code}")
         
         if response.status_code == 200:
