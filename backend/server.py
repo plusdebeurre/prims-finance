@@ -36,6 +36,7 @@ api_router.include_router(contracts_router)
 api_router.include_router(general_conditions_router)
 api_router.include_router(notifications_router)
 api_router.include_router(purchase_orders_router)
+api_router.include_router(invoices_router)
 
 # Include the router in the main app
 app.include_router(api_router)
