@@ -200,35 +200,35 @@ class PrismFinanceAPITest:
         # For multipart/form-data, we need to remove Content-Type from headers
         headers = {'Authorization': f'Bearer {self.token}'} if self.token else {}
         
-        response = requests.post(f"{API_URL}/contract-templates", files=files, data=data, headers=headers)
-        print(f"POST /contract-templates status code: {response.status_code}")
+        response = requests.post(f"{API_URL}/templates", files=files, data=data, headers=headers)
+        print(f"POST /templates status code: {response.status_code}")
         
         # Clean up the test file
         os.remove(template_path)
         
-        if response.status_code == 200:
-            print("✅ POST /contract-templates successful")
+        if response.status_code == 200 or response.status_code == 201:
+            print("✅ POST /templates successful")
             template = response.json()
             self.created_template_id = template["id"]
             print(f"✅ Created template with ID: {self.created_template_id}")
             return True
         else:
-            print(f"❌ POST /contract-templates failed with status code {response.status_code}")
+            print(f"❌ POST /templates failed with status code {response.status_code}")
             print(f"Response: {response.text}")
             return False
 
     def test_07_get_contract_templates(self):
         """Test getting contract templates"""
-        response = requests.get(f"{API_URL}/contract-templates", headers=self.headers)
-        print(f"GET /contract-templates status code: {response.status_code}")
+        response = requests.get(f"{API_URL}/templates", headers=self.headers)
+        print(f"GET /templates status code: {response.status_code}")
         
         if response.status_code == 200:
-            print("✅ GET /contract-templates successful")
+            print("✅ GET /templates successful")
             templates = response.json()
             print(f"✅ Found {len(templates)} templates")
             return True
         else:
-            print(f"❌ GET /contract-templates failed with status code {response.status_code}")
+            print(f"❌ GET /templates failed with status code {response.status_code}")
             print(f"Response: {response.text}")
             return False
 
