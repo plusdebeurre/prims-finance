@@ -168,6 +168,23 @@ class PrismFinanceAPITest:
 
     def test_06_upload_contract_template(self):
         """Test uploading a contract template"""
+        # First, let's get the client company ID if not already set
+        if not self.test_supplier.get("client_company_id"):
+            response = requests.get(f"{API_URL}/companies", headers=self.headers)
+            if response.status_code == 200:
+                companies = response.json()
+                if companies:
+                    # Use the first company
+                    company_id = companies[0]["id"]
+                    self.test_supplier["client_company_id"] = company_id
+                    print(f"✅ Using existing company with ID: {company_id}")
+                else:
+                    print("❌ No companies found")
+                    return False
+            else:
+                print(f"❌ Failed to get companies: {response.text}")
+                return False
+        
         # Create a simple test template file
         template_path = "/tmp/test_template.docx"
         with open(template_path, "w") as f:
@@ -178,7 +195,8 @@ class PrismFinanceAPITest:
             'file': ('test_template.docx', open(template_path, 'rb'), 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
         }
         data = {
-            'name': f'Test Template {self.timestamp}'
+            'name': f'Test Template {self.timestamp}',
+            'client_company_id': self.test_supplier["client_company_id"]
         }
         
         # For multipart/form-data, we need to remove Content-Type from headers
