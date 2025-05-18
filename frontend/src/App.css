@@ -1,38 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 .App {
-    text-align: center;
+  text-align: center;
 }
 
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+/* Custom styling for the PRISM'FINANCE app */
+:root {
+  --primary-color: #004A58;
+  --primary-light: #80CED7;
+  --primary-dark: #00353F;
+  --accent-color: #F5F5F5;
+  --text-color: #333333;
+  --background-color: #F7F9FA;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+/* Modern minimalist styles inspired by Apple */
+.modern-input {
+  @apply border-0 border-b-2 border-gray-300 focus:border-[#004A58] focus:ring-0 bg-transparent px-0 py-2;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+.modern-button {
+  @apply px-6 py-3 bg-[#004A58] text-white rounded-lg hover:bg-[#00353F] transition duration-150 ease-in-out;
 }
 
-.App-link {
-    color: #61dafb;
+.modern-card {
+  @apply bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition duration-150 ease-in-out;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+/* Animation for status indicators */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 74, 88, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(0, 74, 88, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 74, 88, 0);
+  }
+}
+
+.status-indicator {
+  @apply rounded-full h-3 w-3 inline-block mr-2;
+}
+
+.status-indicator.green {
+  @apply bg-green-500;
+  animation: pulse 2s infinite;
+}
+
+.status-indicator.orange {
+  @apply bg-yellow-500;
+}
+
+.status-indicator.red {
+  @apply bg-red-500;
+}
+
+/* Custom file upload button */
+.file-upload-button {
+  @apply relative overflow-hidden inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#004A58] hover:bg-[#00353F] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#004A58];
+}
+
+.file-upload-button input[type="file"] {
+  @apply absolute left-0 top-0 opacity-0 w-full h-full cursor-pointer;
+}
+
+/* Grid layout for cards */
+.card-grid {
+  @apply grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3;
+}
+
+/* Form styling */
+.form-group {
+  @apply mb-6;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-gray-700 mb-1;
+}
+
+.form-input {
+  @apply block w-full shadow-sm focus:ring-[#004A58] focus:border-[#004A58] sm:text-sm border-gray-300 rounded-md;
 }
