@@ -6,6 +6,10 @@ import logging
 import os
 from datetime import datetime
 import uuid
+import sys
+
+# Add the current directory to the path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Import utilities and models
 from utils import db, UPLOAD_DIR, get_password_hash
