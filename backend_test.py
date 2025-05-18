@@ -1,327 +1,181 @@
+
 import requests
-import unittest
-import os
-import json
-from datetime import datetime
+import sys
+import time
 
-# Get the backend URL from the frontend .env file
-BACKEND_URL = "https://cbdb9793-9ca3-49a0-b2b7-4fedf07917dd.preview.emergentagent.com"
-API_URL = f"{BACKEND_URL}/api"
-
-class PrismFinanceAPITest:
-    def __init__(self):
-        # Generate unique test data
-        self.timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        self.test_supplier = {
-            "name": f"Test Supplier {self.timestamp}",
-            "type": "sas",
-            "siret": f"SIRET{self.timestamp}",
-            "vat_number": f"VAT{self.timestamp}",
-            "profession": "Test Profession",
-            "address": "123 Test Street",
-            "postal_code": "75001",
-            "city": "Paris",
-            "country": "France",
-            "iban": "FR7630001007941234567890185",
-            "bic": "BNPAFRPP",
-            "vat_rates": [20.0],
-            "emails": [f"test{self.timestamp}@example.com"],
-            "client_company_id": None  # Will be set during test
-        }
-        self.created_supplier_id = None
-        self.created_template_id = None
+class PrismFinanceAPITester:
+    def __init__(self, base_url):
+        self.base_url = base_url
         self.token = None
-        self.headers = {'Content-Type': 'application/json'}
+        self.tests_run = 0
+        self.tests_passed = 0
+        self.user_id = None
+        self.company_id = None
+
+    def run_test(self, name, method, endpoint, expected_status, data=None, params=None):
+        """Run a single API test"""
+        url = f"{self.base_url}/api/{endpoint}"
+        headers = {'Content-Type': 'application/json'}
+        if self.token:
+            headers['Authorization'] = f'Bearer {self.token}'
+
+        self.tests_run += 1
+        print(f"\n🔍 Testing {name}...")
         
-    def test_00_login(self):
-        """Test login with admin credentials"""
-        login_data = {
-            'username': 'admin@prismfinance.com',
-            'password': 'admin123'
-        }
+        try:
+            if method == 'GET':
+                response = requests.get(url, headers=headers, params=params)
+            elif method == 'POST':
+                response = requests.post(url, json=data, headers=headers)
+            elif method == 'PUT':
+                response = requests.put(url, json=data, headers=headers)
+            elif method == 'DELETE':
+                response = requests.delete(url, headers=headers)
+
+            success = response.status_code == expected_status
+            if success:
+                self.tests_passed += 1
+                print(f"✅ Passed - Status: {response.status_code}")
+                try:
+                    return success, response.json() if response.text else {}
+                except:
+                    return success, {}
+            else:
+                print(f"❌ Failed - Expected {expected_status}, got {response.status_code}")
+                try:
+                    error_detail = response.json().get('detail', 'No detail provided')
+                    print(f"Error detail: {error_detail}")
+                except:
+                    print(f"Response text: {response.text}")
+                return False, {}
+
+        except Exception as e:
+            print(f"❌ Failed - Error: {str(e)}")
+            return False, {}
+
+    def test_login(self, username, password):
+        """Test login and get token"""
+        print(f"\n🔑 Attempting login with {username}...")
         
-        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-        
-        response = requests.post(
-            f"{API_URL}/auth/token", 
-            data=login_data,
-            headers=headers
-        )
-        print(f"POST /auth/token status code: {response.status_code}")
-        
-        if response.status_code == 200:
-            data = response.json()
-            self.token = data.get('access_token')
-            if self.token:
-                self.headers = {
-                    'Content-Type': 'application/json',
-                    'Authorization': f'Bearer {self.token}'
-                }
-                print("✅ Login successful, token obtained")
+        try:
+            # For token endpoint, we need to use form data
+            formData = {
+                'username': username,
+                'password': password
+            }
+            
+            url = f"{self.base_url}/api/auth/token"
+            response = requests.post(
+                url, 
+                data=formData,
+                headers={'Content-Type': 'application/x-www-form-urlencoded'}
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.token = data.get('access_token')
+                self.user_id = data.get('user_id')
+                self.company_id = data.get('company_id')
+                print(f"✅ Login successful - User ID: {self.user_id}, Role: {data.get('role')}")
                 return True
             else:
-                print("❌ Login response did not contain a token")
-                return False
-        else:
-            print(f"❌ Login failed with status code {response.status_code}")
-            print(f"Response: {response.text}")
-            return False
-
-    def test_01_api_health(self):
-        """Test if the API is accessible"""
-        try:
-            response = requests.get(f"{BACKEND_URL}/api/suppliers", headers=self.headers)
-            print(f"✅ API is accessible at {BACKEND_URL}")
-            return True
-        except Exception as e:
-            print(f"❌ API is not accessible: {str(e)}")
-            return False
-
-    def test_02_get_suppliers(self):
-        """Test getting suppliers list"""
-        response = requests.get(f"{API_URL}/suppliers", headers=self.headers)
-        print(f"GET /suppliers status code: {response.status_code}")
-        
-        if response.status_code == 200:
-            print("✅ GET /suppliers successful")
-            suppliers = response.json()
-            print(f"✅ Found {len(suppliers)} suppliers")
-            return True
-        else:
-            print(f"❌ GET /suppliers failed with status code {response.status_code}")
-            print(f"Response: {response.text}")
-            return False
-
-    def test_03_create_supplier(self):
-        """Test creating a new supplier"""
-        # First, let's get the client company ID
-        response = requests.get(f"{API_URL}/companies", headers=self.headers)
-        if response.status_code == 200:
-            companies = response.json()
-            if companies:
-                # Use the first company
-                company_id = companies[0]["id"]
-                self.test_supplier["client_company_id"] = company_id
-                print(f"✅ Using existing company with ID: {company_id}")
-            else:
-                print("❌ No companies found")
-                return False
-        else:
-            print(f"❌ Failed to get companies: {response.text}")
-            return False
-        
-        # Now create the supplier
-        response = requests.post(f"{API_URL}/suppliers", json=self.test_supplier, headers=self.headers)
-        print(f"POST /suppliers status code: {response.status_code}")
-        
-        if response.status_code == 200 or response.status_code == 201:
-            print("✅ POST /suppliers successful")
-            supplier = response.json()
-            self.created_supplier_id = supplier["id"]
-            print(f"✅ Created supplier with ID: {self.created_supplier_id}")
-            return True
-        else:
-            print(f"❌ POST /suppliers failed with status code {response.status_code}")
-            print(f"Response: {response.text}")
-            return False
-
-    def test_04_get_supplier_by_id(self):
-        """Test getting a supplier by ID"""
-        if not self.created_supplier_id:
-            if not self.test_03_create_supplier():
-                return False
-            
-        response = requests.get(f"{API_URL}/suppliers/{self.created_supplier_id}", headers=self.headers)
-        print(f"GET /suppliers/{self.created_supplier_id} status code: {response.status_code}")
-        
-        if response.status_code == 200:
-            print(f"✅ GET /suppliers/{self.created_supplier_id} successful")
-            supplier = response.json()
-            print(f"✅ Retrieved supplier: {supplier['name']}")
-            return True
-        else:
-            print(f"❌ GET /suppliers/{self.created_supplier_id} failed with status code {response.status_code}")
-            print(f"Response: {response.text}")
-            return False
-
-    def test_05_update_supplier(self):
-        """Test updating a supplier"""
-        if not self.created_supplier_id:
-            if not self.test_03_create_supplier():
-                return False
-            
-        updated_data = self.test_supplier.copy()
-        updated_data["name"] = f"Updated Supplier {self.timestamp}"
-        
-        response = requests.put(f"{API_URL}/suppliers/{self.created_supplier_id}", json=updated_data, headers=self.headers)
-        print(f"PUT /suppliers/{self.created_supplier_id} status code: {response.status_code}")
-        
-        if response.status_code == 200:
-            print(f"✅ PUT /suppliers/{self.created_supplier_id} successful")
-            supplier = response.json()
-            print(f"✅ Updated supplier name to: {supplier['name']}")
-            return True
-        else:
-            print(f"❌ PUT /suppliers/{self.created_supplier_id} failed with status code {response.status_code}")
-            print(f"Response: {response.text}")
-            return False
-
-    def test_06_upload_contract_template(self):
-        """Test uploading a contract template"""
-        # First, let's get the client company ID if not already set
-        if not self.test_supplier.get("client_company_id"):
-            response = requests.get(f"{API_URL}/companies", headers=self.headers)
-            if response.status_code == 200:
-                companies = response.json()
-                if companies:
-                    # Use the first company
-                    company_id = companies[0]["id"]
-                    self.test_supplier["client_company_id"] = company_id
-                    print(f"✅ Using existing company with ID: {company_id}")
-                else:
-                    print("❌ No companies found")
-                    return False
-            else:
-                print(f"❌ Failed to get companies: {response.text}")
-                return False
-        
-        # Create a simple test template file
-        template_path = "/tmp/test_template.docx"
-        with open(template_path, "w") as f:
-            f.write("This is a test template with {{variable1}} and {{variable2}}")
-        
-        # Prepare multipart form data
-        files = {
-            'file': ('test_template.docx', open(template_path, 'rb'), 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-        }
-        data = {
-            'name': f'Test Template {self.timestamp}',
-            'client_company_id': self.test_supplier["client_company_id"]
-        }
-        
-        # For multipart/form-data, we need to remove Content-Type from headers
-        headers = {'Authorization': f'Bearer {self.token}'} if self.token else {}
-        
-        response = requests.post(f"{API_URL}/templates", files=files, data=data, headers=headers)
-        print(f"POST /templates status code: {response.status_code}")
-        
-        # Clean up the test file
-        os.remove(template_path)
-        
-        if response.status_code == 200 or response.status_code == 201:
-            print("✅ POST /templates successful")
-            template = response.json()
-            self.created_template_id = template["id"]
-            print(f"✅ Created template with ID: {self.created_template_id}")
-            return True
-        else:
-            print(f"❌ POST /templates failed with status code {response.status_code}")
-            print(f"Response: {response.text}")
-            return False
-
-    def test_07_get_contract_templates(self):
-        """Test getting contract templates"""
-        response = requests.get(f"{API_URL}/templates", headers=self.headers)
-        print(f"GET /templates status code: {response.status_code}")
-        
-        if response.status_code == 200:
-            print("✅ GET /templates successful")
-            templates = response.json()
-            print(f"✅ Found {len(templates)} templates")
-            return True
-        else:
-            print(f"❌ GET /templates failed with status code {response.status_code}")
-            print(f"Response: {response.text}")
-            return False
-
-    def test_08_generate_contract(self):
-        """Test generating a contract"""
-        if not self.created_supplier_id:
-            if not self.test_03_create_supplier():
+                print(f"❌ Login failed - Status: {response.status_code}")
+                try:
+                    error_detail = response.json().get('detail', 'No detail provided')
+                    print(f"Error detail: {error_detail}")
+                except:
+                    print(f"Response text: {response.text}")
                 return False
                 
-        if not self.created_template_id:
-            if not self.test_06_upload_contract_template():
-                return False
-            
-        # Prepare contract data
-        contract_data = {
-            'supplier_id': self.created_supplier_id,
-            'template_id': self.created_template_id,
-            'status': 'draft',
-            'variables': {
-                "variable1": "Test Value 1",
-                "variable2": "Test Value 2"
-            },
-            'client_company_id': self.test_supplier["client_company_id"]
-        }
-        
-        response = requests.post(f"{API_URL}/contracts", json=contract_data, headers=self.headers)
-        print(f"POST /contracts status code: {response.status_code}")
-        
-        if response.status_code == 200 or response.status_code == 201:
-            print("✅ POST /contracts successful")
-            contract = response.json()
-            print(f"✅ Created contract with ID: {contract['id']}")
-            return True
-        else:
-            print(f"❌ POST /contracts failed with status code {response.status_code}")
-            print(f"Response: {response.text}")
+        except Exception as e:
+            print(f"❌ Login failed - Error: {str(e)}")
             return False
 
-    def test_09_get_contracts(self):
-        """Test getting contracts"""
-        response = requests.get(f"{API_URL}/contracts", headers=self.headers)
-        print(f"GET /contracts status code: {response.status_code}")
+    def test_auth_endpoints(self):
+        """Test authentication-related endpoints"""
+        tests = [
+            # Get current user profile
+            lambda: self.run_test("Get User Profile", "GET", "auth/me", 200)
+        ]
         
-        if response.status_code == 200:
-            print("✅ GET /contracts successful")
-            contracts = response.json()
-            print(f"✅ Found {len(contracts)} contracts")
-            return True
-        else:
-            print(f"❌ GET /contracts failed with status code {response.status_code}")
-            print(f"Response: {response.text}")
-            return False
+        results = []
+        for test in tests:
+            results.append(test())
+        
+        return all(result[0] for result in results)
+
+    def test_suppliers_endpoints(self):
+        """Test supplier-related endpoints"""
+        tests = [
+            # Get suppliers list
+            lambda: self.run_test("Get Suppliers List", "GET", "suppliers", 200)
+        ]
+        
+        results = []
+        for test in tests:
+            results.append(test())
+        
+        return all(result[0] for result in results)
+
+    def test_contracts_endpoints(self):
+        """Test contract-related endpoints"""
+        tests = [
+            # Get contracts list
+            lambda: self.run_test("Get Contracts List", "GET", "contracts", 200)
+        ]
+        
+        results = []
+        for test in tests:
+            results.append(test())
+        
+        return all(result[0] for result in results)
+
+    def test_templates_endpoints(self):
+        """Test template-related endpoints"""
+        tests = [
+            # Get templates list
+            lambda: self.run_test("Get Templates List", "GET", "templates", 200)
+        ]
+        
+        results = []
+        for test in tests:
+            results.append(test())
+        
+        return all(result[0] for result in results)
 
 def run_tests():
-    """Run all tests in sequence and report results"""
-    test = PrismFinanceAPITest()
+    # Get the backend URL from environment variable
+    backend_url = "https://cbdb9793-9ca3-49a0-b2b7-4fedf07917dd.preview.emergentagent.com"
     
-    print("\n🔍 PRISM'FINANCE API TEST RESULTS 🔍\n")
+    print(f"🚀 Starting API tests against {backend_url}")
     
-    # Run tests in sequence
+    tester = PrismFinanceAPITester(backend_url)
+    
+    # Test login with admin credentials
+    if not tester.test_login("admin@prismfinance.com", "admin123"):
+        print("❌ Login failed, stopping tests")
+        return 1
+    
+    # Run all endpoint tests
+    print("\n📋 Testing API endpoints...")
+    
     tests = [
-        test.test_00_login,
-        test.test_01_api_health,
-        test.test_02_get_suppliers,
-        test.test_03_create_supplier,
-        test.test_04_get_supplier_by_id,
-        test.test_05_update_supplier,
-        test.test_06_upload_contract_template,
-        test.test_07_get_contract_templates,
-        test.test_08_generate_contract,
-        test.test_09_get_contracts
+        ("Authentication", tester.test_auth_endpoints),
+        ("Suppliers", tester.test_suppliers_endpoints),
+        ("Contracts", tester.test_contracts_endpoints),
+        ("Templates", tester.test_templates_endpoints)
     ]
     
-    results = []
-    for test_func in tests:
-        print(f"\n📋 Running test: {test_func.__doc__}")
-        try:
-            result = test_func()
-            results.append(result)
-        except Exception as e:
-            print(f"❌ Test failed with exception: {str(e)}")
-            results.append(False)
+    for name, test_func in tests:
+        print(f"\n🔍 Testing {name} endpoints...")
+        if test_func():
+            print(f"✅ All {name} tests passed")
+        else:
+            print(f"❌ Some {name} tests failed")
     
-    # Print summary
-    print("\n📊 TEST SUMMARY 📊")
-    passed = results.count(True)
-    failed = results.count(False)
-    print(f"✅ Passed: {passed}/{len(tests)}")
-    print(f"❌ Failed: {failed}/{len(tests)}")
-    
-    return passed == len(tests)
+    # Print results
+    print(f"\n📊 Tests passed: {tester.tests_passed}/{tester.tests_run}")
+    return 0 if tester.tests_passed == tester.tests_run else 1
 
 if __name__ == "__main__":
-    run_tests()
+    sys.exit(run_tests())
