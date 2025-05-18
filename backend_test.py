@@ -37,7 +37,7 @@ class PrismFinanceAPITest:
     def test_00_login(self):
         """Test login with admin credentials"""
         login_data = {
-            'username': 'admin@prismfinance.com',
+            'username': 'admin@example.com',
             'password': 'admin123'
         }
         
