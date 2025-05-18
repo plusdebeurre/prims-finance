@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 
 # Get the backend URL from the frontend .env file
-BACKEND_URL = "https://6889fd20-755d-4ec7-b787-a13d7a3c9ecc.preview.emergentagent.com"
+BACKEND_URL = "https://cbdb9793-9ca3-49a0-b2b7-4fedf07917dd.preview.emergentagent.com"
 API_URL = f"{BACKEND_URL}/api"
 
 class PrismFinanceAPITest:
