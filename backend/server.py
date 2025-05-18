@@ -19,6 +19,7 @@ from routes.contracts import router as contracts_router
 from routes.general_conditions import router as general_conditions_router
 from routes.notifications import router as notifications_router
 from routes.purchase_orders import router as purchase_orders_router
+from routes.invoices import router as invoices_router
 
 # Create the main app
 app = FastAPI(title="PRISM'FINANCE API", version="1.0.0")
