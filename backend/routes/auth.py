@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, status, Body
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import EmailStr
 from typing import Dict, Optional, Any
+import jwt
 
 from datetime import datetime, timedelta
 import uuid
@@ -14,7 +15,9 @@ from utils import (
     create_access_token, 
     db,
     ACCESS_TOKEN_EXPIRE_MINUTES,
-    send_email
+    send_email,
+    SECRET_KEY,
+    ALGORITHM
 )
 from auth import get_current_user, get_admin_user, get_super_admin_user
 
