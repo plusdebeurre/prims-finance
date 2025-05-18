@@ -254,6 +254,7 @@ def run_tests():
     
     # Run tests in sequence
     tests = [
+        test.test_00_login,
         test.test_01_api_health,
         test.test_02_get_suppliers,
         test.test_03_create_supplier,
