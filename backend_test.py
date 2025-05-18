@@ -34,7 +34,7 @@ class PrismFinanceAPITest:
         self.token = None
         self.headers = {'Content-Type': 'application/json'}
         
-    def test_00_login_admin(self):
+    def test_00_login(self):
         """Test login with admin credentials"""
         login_data = {
             'username': 'admin@prismfinance.com',
