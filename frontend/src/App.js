@@ -1095,8 +1095,8 @@ const GenerateContractForm = () => {
     const fetchData = async () => {
       try {
         const [templatesResponse, suppliersResponse] = await Promise.all([
-          axios.get(`${API}/templates`),
-          axios.get(`${API}/suppliers`)
+          templatesAPI.getAll(),
+          suppliersAPI.getAll()
         ]);
         
         setTemplates(templatesResponse.data);
