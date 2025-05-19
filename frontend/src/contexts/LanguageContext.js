@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 // Define the translations
 export const translations = {
@@ -22,6 +22,9 @@ export const translations = {
     required_field: 'This field is required',
     invalid_format: 'Invalid format',
     no_results: 'No results found',
+    select: 'Select',
+    back: 'Back',
+    saving: 'Saving...',
     
     // Authentication
     sign_in: 'Sign In',
@@ -57,6 +60,7 @@ export const translations = {
     city: 'City',
     country: 'Country',
     supplier_documents: 'Supplier Documents',
+    document_name: 'Document Name',
     
     // Contracts
     add_contract: 'Add Contract',
@@ -71,6 +75,13 @@ export const translations = {
     sign_contract: 'Sign Contract',
     download_contract: 'Download Contract',
     contract_variables: 'Contract Variables',
+    created_at: 'Created At',
+    signed_at: 'Signed At',
+    template_file: 'Template File',
+    variables: 'Variables',
+    version: 'Version',
+    content: 'Content',
+    description: 'Description',
     
     // Templates
     add_template: 'Add Template',
@@ -92,6 +103,7 @@ export const translations = {
     po_date: 'PO Date',
     po_items: 'Items',
     po_total: 'Total',
+    invoice: 'Invoice',
     
     // Dashboard
     dashboard: 'Dashboard',
@@ -136,6 +148,9 @@ export const translations = {
     required_field: 'Ce champ est obligatoire',
     invalid_format: 'Format invalide',
     no_results: 'Aucun résultat trouvé',
+    select: 'Sélectionner',
+    back: 'Retour',
+    saving: 'Enregistrement...',
     
     // Authentication
     sign_in: 'Se connecter',
@@ -171,6 +186,7 @@ export const translations = {
     city: 'Ville',
     country: 'Pays',
     supplier_documents: 'Documents du fournisseur',
+    document_name: 'Nom du document',
     
     // Contracts
     add_contract: 'Ajouter un contrat',
@@ -185,6 +201,13 @@ export const translations = {
     sign_contract: 'Signer le contrat',
     download_contract: 'Télécharger le contrat',
     contract_variables: 'Variables du contrat',
+    created_at: 'Créé le',
+    signed_at: 'Signé le',
+    template_file: 'Fichier modèle',
+    variables: 'Variables',
+    version: 'Version',
+    content: 'Contenu',
+    description: 'Description',
     
     // Templates
     add_template: 'Ajouter un modèle',
@@ -206,6 +229,7 @@ export const translations = {
     po_date: 'Date de BC',
     po_items: 'Articles',
     po_total: 'Total',
+    invoice: 'Facture',
     
     // Dashboard
     dashboard: 'Tableau de bord',
