@@ -1,50 +1,64 @@
-from fastapi import APIRouter, HTTPException, Depends, status, Body
-from fastapi.security import OAuth2PasswordRequestForm
-from pydantic import EmailStr
-from typing import Dict, Optional, Any
-import jwt
-
+from fastapi import APIRouter, HTTPException, Depends, status, Query
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from datetime import datetime, timedelta
+from typing import List, Optional
+from bson.objectid import ObjectId
 import uuid
+import jwt
+import re
+import os
 
-from models import User, UserCreate, UserUpdate, Token, UserRole
-from utils import (
-    get_user_by_email, 
-    get_password_hash, 
-    verify_password, 
-    create_access_token, 
-    db,
-    ACCESS_TOKEN_EXPIRE_MINUTES,
-    send_email,
-    SECRET_KEY,
-    ALGORITHM
-)
-from auth import get_current_user, get_admin_user, get_super_admin_user
+from ..db import db
+from ..models import User, UserCreate, UserRole, UserUpdate, UserPasswordUpdate
+from ..auth import create_access_token, get_password_hash, verify_password, get_current_user, get_current_active_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-# Login endpoint
-@router.post("/token", response_model=Token)
+# Token endpoint
+@router.post("/token")
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = await get_user_by_email(form_data.username)
-    if not user or not verify_password(form_data.password, user["password_hash"]):
+    # Find user by email
+    user = await db.users.find_one({"email": form_data.username})
+    
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Update last login time
-    await db.users.update_one(
-        {"id": user["id"]},
-        {"$set": {"last_login": datetime.utcnow()}}
-    )
+    # Verify password
+    if not verify_password(form_data.password, user.get("password_hash", "")):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user["id"]}, 
-        expires_delta=access_token_expires
-    )
+    # Check if user is active
+    if not user.get("is_active", True):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User account is inactive",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Create access token
+    token_data = {
+        "sub": str(user["id"]),
+        "email": user["email"],
+        "role": user["role"]
+    }
+    
+    # Add company_id if it exists
+    if "company_id" in user and user["company_id"]:
+        token_data["company_id"] = str(user["company_id"])
+    
+    # Add supplier_id if it exists
+    if "supplier_id" in user and user["supplier_id"]:
+        token_data["supplier_id"] = str(user["supplier_id"])
+    
+    access_token = create_access_token(data=token_data)
     
     return {
         "access_token": access_token,
@@ -60,7 +74,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 @router.post("/register", response_model=User)
 async def register_supplier(user: UserCreate):
     # Check if email is already registered
-    existing_user = await get_user_by_email(user.email)
+    existing_user = await db.users.find_one({"email": user.email})
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -69,29 +83,54 @@ async def register_supplier(user: UserCreate):
     
     # Ensure user is created as a supplier
     if user.role != UserRole.SUPPLIER:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only supplier accounts can be self-registered"
-        )
+        user.role = UserRole.SUPPLIER  # Force role to be supplier regardless of what was sent
     
-    # Create user object
-    db_user = User(
-        id=str(uuid.uuid4()),
-        email=user.email,
-        name=user.name,
-        role=UserRole.SUPPLIER,
-        company_id=user.company_id,
-        supplier_id=user.supplier_id,
-        created_at=datetime.utcnow()
-    )
+    # Generate a supplier ID
+    supplier_id = str(uuid.uuid4())
     
-    # Insert user in database with hashed password
-    user_data = db_user.dict()
-    user_data["password_hash"] = get_password_hash(user.password)
+    # Create company data document for the supplier
+    company_data = user.company_data.dict() if user.company_data else {}
+    company_data["id"] = str(uuid.uuid4())
+    company_data["supplier_id"] = supplier_id
+    company_data["created_at"] = datetime.utcnow()
+    
+    await db.companies.insert_one(company_data)
+    
+    # Create supplier document
+    supplier_data = {
+        "id": supplier_id,
+        "name": user.name,
+        "email": user.email,
+        "company_data": company_data,
+        "created_at": datetime.utcnow(),
+        "status": "active"
+    }
+    
+    await db.suppliers.insert_one(supplier_data)
+    
+    # Create user document
+    user_data = {
+        "id": str(uuid.uuid4()),
+        "email": user.email,
+        "name": user.name,
+        "role": UserRole.SUPPLIER,
+        "password_hash": get_password_hash(user.password),
+        "supplier_id": supplier_id,
+        "company_id": company_data["id"],
+        "is_active": True,
+        "created_at": datetime.utcnow()
+    }
+    
+    # Store accepted terms & conditions
+    if user.accepted_conditions_id:
+        user_data["accepted_conditions"] = {
+            "conditions_id": user.accepted_conditions_id,
+            "accepted_at": datetime.utcnow()
+        }
     
     await db.users.insert_one(user_data)
     
-    # Remove password_hash field for response
+    # Remove password_hash for the response
     user_data.pop("password_hash", None)
     
     return user_data
@@ -100,30 +139,30 @@ async def register_supplier(user: UserCreate):
 @router.post("/admin", response_model=User)
 async def create_admin(
     user: UserCreate,
-    current_user: User = Depends(get_super_admin_user)
+    current_user: User = Depends(get_current_active_user)
 ):
+    # Check if current user is a super admin
+    if current_user["role"] != UserRole.SUPER_ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to create admin accounts"
+        )
+    
     # Check if email is already registered
-    existing_user = await get_user_by_email(user.email)
+    existing_user = await db.users.find_one({"email": user.email})
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
         )
     
-    # Ensure user is created as an admin
-    if user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only admin accounts can be created with this endpoint"
-        )
-    
-    # Create user object
+    # Create user with admin role
     db_user = User(
         id=str(uuid.uuid4()),
         email=user.email,
         name=user.name,
         role=UserRole.ADMIN,
-        company_id=user.company_id,
+        company_id=current_user["company_id"],  # Assign to same company as the super admin
         created_at=datetime.utcnow()
     )
     
@@ -138,217 +177,215 @@ async def create_admin(
     
     return user_data
 
-# Get current user info
+# Get current user profile
 @router.get("/me", response_model=User)
-async def read_users_me(current_user: User = Depends(get_current_user)):
+async def get_me(current_user: User = Depends(get_current_active_user)):
     return current_user
 
-# Update user profile
+# Update current user profile
 @router.put("/me", response_model=User)
 async def update_me(
     user_update: UserUpdate,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
-    # Prepare update data
-    update_data = {}
-    if user_update.name is not None:
-        update_data["name"] = user_update.name
+    user_id = current_user["id"]
     
-    # Update password if provided
-    if user_update.password is not None:
-        update_data["password_hash"] = get_password_hash(user_update.password)
+    # Prepare update data
+    update_data = {k: v for k, v in user_update.dict(exclude_unset=True).items() if k != "password"}
+    
+    # Handle password change if provided
+    if user_update.current_password and user_update.new_password:
+        # Verify current password
+        if not verify_password(user_update.current_password, current_user.get("password_hash", "")):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Current password is incorrect"
+            )
+        
+        # Update password hash
+        update_data["password_hash"] = get_password_hash(user_update.new_password)
     
     # Update user in database
     if update_data:
-        await db.users.update_one(
-            {"id": current_user.id},
+        update_data["updated_at"] = datetime.utcnow()
+        result = await db.users.update_one(
+            {"id": user_id},
             {"$set": update_data}
         )
-    
-    # Get updated user
-    updated_user = await db.users.find_one({"id": current_user.id})
-    
-    # Remove password_hash field for response
-    updated_user.pop("password_hash", None)
-    
-    return updated_user
-
-# Request password reset
-@router.post("/forgot-password")
-async def forgot_password(email: EmailStr = Body(...)):
-    user = await get_user_by_email(email)
-    if not user:
-        # Don't reveal if email exists for security
-        return {"message": "If the email exists, a password reset link has been sent"}
-    
-    # Generate reset token
-    token = create_access_token(
-        data={"sub": user["id"], "reset": True},
-        expires_delta=timedelta(hours=1)
-    )
-    
-    # Generate reset link
-    # In a real app, this would be a frontend URL with the token
-    reset_link = f"/reset-password?token={token}"
-    
-    # Send email with reset link
-    email_body = f"""
-    <p>You requested a password reset for PRISM'FINANCE. Click the link below to reset your password:</p>
-    <p><a href="{reset_link}">Reset Password</a></p>
-    <p>This link will expire in 1 hour.</p>
-    <p>If you didn't request this, please ignore this email.</p>
-    """
-    
-    await send_email(email, "PRISM'FINANCE Password Reset", email_body)
-    
-    return {"message": "If the email exists, a password reset link has been sent"}
-
-# Reset password with token
-@router.post("/reset-password")
-async def reset_password(
-    token: str = Body(...),
-    new_password: str = Body(...)
-):
-    try:
-        # Decode token
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = payload.get("sub")
-        is_reset = payload.get("reset")
         
-        if not user_id or not is_reset:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid or expired token"
-            )
-        
-        # Get user
-        user = await db.users.find_one({"id": user_id})
-        if not user:
+        if not result.modified_count:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found"
             )
-        
-        # Update password
-        await db.users.update_one(
-            {"id": user_id},
-            {"$set": {"password_hash": get_password_hash(new_password)}}
-        )
-        
-        return {"message": "Password reset successful"}
     
-    except jwt.PyJWTError:
+    # If user is a supplier, also update supplier data
+    if current_user["role"] == UserRole.SUPPLIER and current_user.get("supplier_id"):
+        supplier_update = {}
+        
+        if "name" in update_data:
+            supplier_update["name"] = update_data["name"]
+        
+        if user_update.company_data:
+            # Update company data for supplier
+            company_update = {f"company_data.{k}": v for k, v in user_update.company_data.dict(exclude_unset=True).items()}
+            if company_update:
+                await db.suppliers.update_one(
+                    {"id": current_user["supplier_id"]},
+                    {"$set": {**supplier_update, **company_update, "updated_at": datetime.utcnow()}}
+                )
+    
+    # Return updated user
+    updated_user = await db.users.find_one({"id": user_id})
+    if not updated_user:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired token"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
         )
+    
+    # Remove password hash from response
+    updated_user.pop("password_hash", None)
+    
+    return updated_user
 
-# Change password (authenticated user)
+# Change password
 @router.put("/change-password")
 async def change_password(
-    current_password: str = Body(...),
-    new_password: str = Body(...),
-    current_user: User = Depends(get_current_user)
+    password_update: UserPasswordUpdate,
+    current_user: User = Depends(get_current_active_user)
 ):
-    # Get user with password hash
-    user = await db.users.find_one({"id": current_user.id})
-    
     # Verify current password
-    if not verify_password(current_password, user["password_hash"]):
+    if not verify_password(password_update.current_password, current_user.get("password_hash", "")):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Current password is incorrect"
         )
     
     # Update password
-    await db.users.update_one(
-        {"id": current_user.id},
-        {"$set": {"password_hash": get_password_hash(new_password)}}
+    result = await db.users.update_one(
+        {"id": current_user["id"]},
+        {
+            "$set": {
+                "password_hash": get_password_hash(password_update.new_password),
+                "updated_at": datetime.utcnow()
+            }
+        }
     )
     
-    return {"message": "Password changed successfully"}
+    if not result.modified_count:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update password"
+        )
+    
+    return {"message": "Password updated successfully"}
 
-# List all users (super-admin only)
-@router.get("/users", response_model=list[User])
-async def list_users(
-    role: Optional[UserRole] = None,
-    current_user: User = Depends(get_super_admin_user)
-):
-    # Build query
-    query = {}
-    if role:
-        query["role"] = role
+# Request password reset
+@router.post("/forgot-password")
+async def forgot_password(email: str):
+    # Find user by email
+    user = await db.users.find_one({"email": email})
+    if not user:
+        # Don't reveal that the user doesn't exist
+        return {"message": "If your email is registered, you will receive a password reset link"}
     
-    # Query database
-    users = await db.users.find(query).to_list(length=100)
+    # Generate password reset token
+    reset_token = str(uuid.uuid4())
+    expiration = datetime.utcnow() + timedelta(hours=24)
     
-    # Remove password_hash field from all users
-    for user in users:
-        user.pop("password_hash", None)
+    # Store reset token in database
+    await db.users.update_one(
+        {"id": user["id"]},
+        {
+            "$set": {
+                "reset_token": reset_token,
+                "reset_token_expires": expiration
+            }
+        }
+    )
     
-    return users
+    # In a real application, send an email with the reset link
+    # For now, just return the token for testing
+    reset_link = f"{os.getenv('FRONTEND_URL', 'http://localhost:3000')}/reset-password/{reset_token}"
+    
+    # TODO: Send email with reset link
+    
+    return {"message": "If your email is registered, you will receive a password reset link"}
 
-# Update user (super-admin only)
-@router.put("/users/{user_id}", response_model=User)
-async def update_user(
-    user_id: str,
-    user_update: UserUpdate,
-    current_user: User = Depends(get_super_admin_user)
-):
-    # Check if user exists
-    user = await db.users.find_one({"id": user_id})
+# Reset password with token
+@router.post("/reset-password")
+async def reset_password(token: str, new_password: str):
+    # Find user by reset token
+    user = await db.users.find_one({
+        "reset_token": token,
+        "reset_token_expires": {"$gt": datetime.utcnow()}
+    })
+    
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token"
         )
     
-    # Prepare update data
-    update_data = {}
-    if user_update.name is not None:
-        update_data["name"] = user_update.name
+    # Update password and clear reset token
+    result = await db.users.update_one(
+        {"id": user["id"]},
+        {
+            "$set": {
+                "password_hash": get_password_hash(new_password),
+                "updated_at": datetime.utcnow()
+            },
+            "$unset": {
+                "reset_token": "",
+                "reset_token_expires": ""
+            }
+        }
+    )
     
-    # Update password if provided
-    if user_update.password is not None:
-        update_data["password_hash"] = get_password_hash(user_update.password)
-    
-    # Update user in database
-    if update_data:
-        await db.users.update_one(
-            {"id": user_id},
-            {"$set": update_data}
+    if not result.modified_count:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to reset password"
         )
     
-    # Get updated user
-    updated_user = await db.users.find_one({"id": user_id})
-    
-    # Remove password_hash field for response
-    updated_user.pop("password_hash", None)
-    
-    return updated_user
+    return {"message": "Password has been reset successfully"}
 
-# Delete user (super-admin only)
+# Delete a user (admin only)
 @router.delete("/users/{user_id}")
 async def delete_user(
     user_id: str,
-    current_user: User = Depends(get_super_admin_user)
+    current_user: User = Depends(get_current_active_user)
 ):
-    # Check if user exists
-    user = await db.users.find_one({"id": user_id})
-    if not user:
+    # Check if current user is an admin or super admin
+    if current_user["role"] not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to delete users"
+        )
+    
+    # Get the user to delete
+    user_to_delete = await db.users.find_one({"id": user_id})
+    if not user_to_delete:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
     
-    # Don't allow deleting super-admin
-    if user["role"] == UserRole.SUPER_ADMIN:
+    # Super admins can delete any user
+    # Admins can only delete users in their own company
+    if current_user["role"] == UserRole.ADMIN and current_user["company_id"] != user_to_delete.get("company_id"):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot delete super-admin user"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to delete users from other companies"
         )
     
-    # Delete user
-    await db.users.delete_one({"id": user_id})
+    # Delete the user
+    result = await db.users.delete_one({"id": user_id})
+    
+    if not result.deleted_count:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete user"
+        )
     
     return {"message": "User deleted successfully"}
