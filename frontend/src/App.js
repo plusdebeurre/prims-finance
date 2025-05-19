@@ -1780,7 +1780,7 @@ const GeneralConditions = () => {
     setError(null);
     
     try {
-      await axios.post(`${API}/general-conditions`, generalConditions);
+      await generalConditionsAPI.create(generalConditions);
       
       setSaving(false);
     } catch (error) {
