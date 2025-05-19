@@ -25,7 +25,7 @@ const AuthProvider = ({ children }) => {
     if (token && user) {
       setCurrentUser(JSON.parse(user));
       // Configure axios to use token in all requests
-      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      setAuthToken(token);
     }
     
     setLoading(false);
