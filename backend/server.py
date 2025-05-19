@@ -106,7 +106,7 @@ class SupplierBase(BaseModel):
     status: str = "pending"  # pending, active, inactive, blocked
 
 class SupplierCreate(SupplierBase):
-    company_id: str
+    pass
 
 class SupplierUpdate(BaseModel):
     company_name: Optional[str] = None
