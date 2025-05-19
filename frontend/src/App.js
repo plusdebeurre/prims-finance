@@ -1545,7 +1545,7 @@ const TemplatesList = () => {
   useEffect(() => {
     const fetchTemplates = async () => {
       try {
-        const response = await axios.get(`${API}/templates`);
+        const response = await templatesAPI.getAll();
         setTemplates(response.data);
         setLoading(false);
       } catch (error) {
