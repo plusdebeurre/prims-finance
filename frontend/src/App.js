@@ -36,6 +36,7 @@ const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
+      console.log("Attempting to login with:", email, "Backend URL:", API);
       const response = await axios.post(`${API}/auth/token`, new URLSearchParams({
         'username': email,
         'password': password
@@ -45,6 +46,7 @@ const AuthProvider = ({ children }) => {
         }
       });
       
+      console.log("Login response:", response.data);
       const { access_token, user_id, is_admin, name } = response.data;
       
       // Store token and user info
