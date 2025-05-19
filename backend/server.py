@@ -782,9 +782,6 @@ async def create_contract(
     contract: ContractCreate,
     current_user: UserInDB = Depends(get_admin_user)
 ):
-    if contract.company_id != current_user.company_id:
-        raise HTTPException(status_code=403, detail="Not authorized to create contract for this company")
-    
     # Check if supplier exists
     supplier = await db.suppliers.find_one({"id": contract.supplier_id, "company_id": current_user.company_id})
     if not supplier:
@@ -799,6 +796,9 @@ async def create_contract(
     contract_dict["id"] = str(uuid.uuid4())
     contract_dict["created_at"] = datetime.utcnow()
     contract_dict["updated_at"] = datetime.utcnow()
+    
+    # Use current user's company_id
+    contract_dict["company_id"] = current_user.company_id
     
     await db.contracts.insert_one(contract_dict)
     
