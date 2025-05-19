@@ -618,9 +618,13 @@ async def get_suppliers(
     limit: int = 100,
     current_user: UserInDB = Depends(get_current_user)
 ):
-    query = {"company_id": current_user.company_id}
-    suppliers = await db.suppliers.find(query).skip(skip).limit(limit).to_list(limit)
-    return suppliers
+    try:
+        query = {"company_id": current_user.company_id} if current_user.company_id else {}
+        suppliers = await db.suppliers.find(query).skip(skip).limit(limit).to_list(limit)
+        return suppliers
+    except Exception as e:
+        logging.error(f"Error getting suppliers: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error getting suppliers: {str(e)}")
 
 @suppliers_router.get("/{supplier_id}", response_model=Supplier)
 async def get_supplier(
