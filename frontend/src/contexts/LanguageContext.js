@@ -26,6 +26,16 @@ export const translations = {
     back: 'Back',
     saving: 'Saving...',
     
+    // Landing Page
+    landing_tagline: 'A comprehensive platform for managing finance documents, contracts, and supplier relationships.',
+    landing_feature1_title: 'Document Management',
+    landing_feature1_desc: 'Securely store, organize, and manage all your financial documents in one place.',
+    landing_feature2_title: 'Secure Access',
+    landing_feature2_desc: 'Role-based access control ensures data is only accessible to authorized personnel.',
+    landing_feature3_title: 'Mobile Friendly',
+    landing_feature3_desc: 'Access your financial information anytime, anywhere, from any device.',
+    landing_login_button: 'Access Your Account',
+    
     // Authentication
     sign_in: 'Sign In',
     sign_out: 'Sign Out',
