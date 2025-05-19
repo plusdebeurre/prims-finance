@@ -58,6 +58,13 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     name: Optional[str] = None
     password: Optional[str] = None
+    current_password: Optional[str] = None
+    new_password: Optional[str] = None
+    company_data: Optional[Dict[str, Any]] = None
+
+class UserPasswordUpdate(BaseModel):
+    current_password: str
+    new_password: str
 
 class User(UserBase):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
