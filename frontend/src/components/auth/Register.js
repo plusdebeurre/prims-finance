@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -8,7 +9,8 @@ const API = `${BACKEND_URL}/api`;
 
 export default function Register() {
   const navigate = useNavigate();
-  const { signup, isAuthenticated } = useAuth();
+  const { register, isAuthenticated } = useAuth();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [generalConditions, setGeneralConditions] = useState(null);
@@ -128,8 +130,8 @@ export default function Register() {
         accepted_conditions_id: generalConditions?.id
       };
       
-      // Call the signup function from AuthContext
-      await signup(registrationData);
+      // Call the register function from AuthContext
+      await register(registrationData);
       navigate('/dashboard');
     } catch (error) {
       setError(error.response?.data?.detail || 'Failed to create an account');
@@ -345,7 +347,7 @@ export default function Register() {
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div>
                   <label htmlFor="registration_number" className="form-label">
-                    Registration Number*
+                    Registration Number (SIRET)*
                   </label>
                   <input
                     id="registration_number"
@@ -355,6 +357,7 @@ export default function Register() {
                     className="form-input"
                     value={formData.registration_number}
                     onChange={handleChange}
+                    placeholder="e.g. 123 456 789 00012"
                   />
                 </div>
                 <div>
@@ -375,7 +378,7 @@ export default function Register() {
               
               <div className="mb-4">
                 <label htmlFor="representative_name" className="form-label">
-                  Representative Name*
+                  Representative Full Name*
                 </label>
                 <input
                   id="representative_name"
@@ -400,6 +403,7 @@ export default function Register() {
                   className="form-input"
                   value={formData.representative_role}
                   onChange={handleChange}
+                  placeholder="e.g. CEO, Managing Director"
                 />
               </div>
               
@@ -415,6 +419,7 @@ export default function Register() {
                   className="form-input"
                   value={formData.phone}
                   onChange={handleChange}
+                  placeholder="e.g. +33 1 23 45 67 89"
                 />
               </div>
             </div>
