@@ -596,13 +596,13 @@ async def create_supplier(
     supplier: SupplierCreate,
     current_user: UserInDB = Depends(get_admin_user)
 ):
-    if supplier.company_id != current_user.company_id:
-        raise HTTPException(status_code=403, detail="Not authorized to create supplier for this company")
-    
     supplier_dict = supplier.dict()
     supplier_dict["id"] = str(uuid.uuid4())
     supplier_dict["created_at"] = datetime.utcnow()
     supplier_dict["updated_at"] = datetime.utcnow()
+    
+    # Use current user's company_id
+    supplier_dict["company_id"] = current_user.company_id
     
     await db.suppliers.insert_one(supplier_dict)
     
