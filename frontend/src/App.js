@@ -102,7 +102,7 @@ const ProtectedRoute = ({ children, requireAdmin }) => {
     if (!currentUser) {
       navigate("/login");
     } else if (requireAdmin && !isAdmin) {
-      navigate("/");
+      navigate("/dashboard");
     }
   }, [currentUser, isAdmin, navigate, requireAdmin]);
   
