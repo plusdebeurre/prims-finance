@@ -15,6 +15,7 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 
 // Context Providers
 import { AuthProvider } from './contexts/AuthContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 
 // Dashboard Components
 import Dashboard from './pages/Dashboard';
@@ -61,371 +62,373 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password/:token" element={<ResetPassword />} />
-          <Route path="/unauthorized" element={<Unauthorized />} />
-          
-          {/* Protected Routes */}
-          <Route 
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Navigate to="/dashboard" replace />
-              </ProtectedRoute>
-            } 
-          />
+        <LanguageProvider>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
+            <Route path="/unauthorized" element={<Unauthorized />} />
+            
+            {/* Protected Routes */}
+            <Route 
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Navigate to="/dashboard" replace />
+                </ProtectedRoute>
+              } 
+            />
 
-          {/* Dashboard */}
-          <Route 
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Dashboard />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
+            {/* Dashboard */}
+            <Route 
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Dashboard />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
 
-          {/* Admin Routes */}
-          {/* Suppliers */}
-          <Route 
-            path="/suppliers"
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <AppLayout>
-                  <Suppliers />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/suppliers/new"
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <AppLayout>
-                  <SupplierForm />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/suppliers/:id"
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <AppLayout>
-                  <SupplierDetails />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/suppliers/:id/edit"
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <AppLayout>
-                  <SupplierForm isEditing={true} />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
+            {/* Admin Routes */}
+            {/* Suppliers */}
+            <Route 
+              path="/suppliers"
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <AppLayout>
+                    <Suppliers />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/suppliers/new"
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <AppLayout>
+                    <SupplierForm />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/suppliers/:id"
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <AppLayout>
+                    <SupplierDetails />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/suppliers/:id/edit"
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <AppLayout>
+                    <SupplierForm isEditing={true} />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
 
-          {/* Contracts */}
-          <Route 
-            path="/contracts"
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <AppLayout>
-                  <Contracts />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/contracts/new"
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <AppLayout>
-                  <ContractForm />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/contracts/:id"
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <AppLayout>
-                  <ContractDetails />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/contracts/:id/edit"
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <AppLayout>
-                  <ContractForm isEditing={true} />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
+            {/* Contracts */}
+            <Route 
+              path="/contracts"
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <AppLayout>
+                    <Contracts />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/contracts/new"
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <AppLayout>
+                    <ContractForm />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/contracts/:id"
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <AppLayout>
+                    <ContractDetails />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/contracts/:id/edit"
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <AppLayout>
+                    <ContractForm isEditing={true} />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
 
-          {/* Templates */}
-          <Route 
-            path="/templates"
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <AppLayout>
-                  <Templates />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/templates/new"
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <AppLayout>
-                  <TemplateForm />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/templates/:id"
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <AppLayout>
-                  <TemplateDetails />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/templates/:id/edit"
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <AppLayout>
-                  <TemplateForm isEditing={true} />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
+            {/* Templates */}
+            <Route 
+              path="/templates"
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <AppLayout>
+                    <Templates />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/templates/new"
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <AppLayout>
+                    <TemplateForm />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/templates/:id"
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <AppLayout>
+                    <TemplateDetails />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/templates/:id/edit"
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <AppLayout>
+                    <TemplateForm isEditing={true} />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
 
-          {/* Purchase Orders */}
-          <Route 
-            path="/purchase-orders"
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <AppLayout>
-                  <PurchaseOrders />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/purchase-orders/new"
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <AppLayout>
-                  <PurchaseOrderForm />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/purchase-orders/:id"
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <AppLayout>
-                  <PurchaseOrderDetails />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/purchase-orders/:id/edit"
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <AppLayout>
-                  <PurchaseOrderForm isEditing={true} />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
+            {/* Purchase Orders */}
+            <Route 
+              path="/purchase-orders"
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <AppLayout>
+                    <PurchaseOrders />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/purchase-orders/new"
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <AppLayout>
+                    <PurchaseOrderForm />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/purchase-orders/:id"
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <AppLayout>
+                    <PurchaseOrderDetails />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/purchase-orders/:id/edit"
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <AppLayout>
+                    <PurchaseOrderForm isEditing={true} />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
 
-          {/* Invoices */}
-          <Route 
-            path="/invoices"
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <AppLayout>
-                  <Invoices />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/invoices/new"
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <AppLayout>
-                  <InvoiceForm />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/invoices/:id"
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <AppLayout>
-                  <InvoiceDetails />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/invoices/:id/edit"
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <AppLayout>
-                  <InvoiceForm isEditing={true} />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
+            {/* Invoices */}
+            <Route 
+              path="/invoices"
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <AppLayout>
+                    <Invoices />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/invoices/new"
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <AppLayout>
+                    <InvoiceForm />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/invoices/:id"
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <AppLayout>
+                    <InvoiceDetails />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/invoices/:id/edit"
+              element={
+                <ProtectedRoute requireAdmin={true}>
+                  <AppLayout>
+                    <InvoiceForm isEditing={true} />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
 
-          {/* Supplier Routes */}
-          <Route 
-            path="/profile"
-            element={
-              <ProtectedRoute requireSupplier={true}>
-                <AppLayout>
-                  <MyProfile />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/my-documents"
-            element={
-              <ProtectedRoute requireSupplier={true}>
-                <AppLayout>
-                  <MyDocuments />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/my-contracts"
-            element={
-              <ProtectedRoute requireSupplier={true}>
-                <AppLayout>
-                  <MyContracts />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/my-contracts/:id"
-            element={
-              <ProtectedRoute requireSupplier={true}>
-                <AppLayout>
-                  <MyContractDetails />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/my-purchase-orders"
-            element={
-              <ProtectedRoute requireSupplier={true}>
-                <AppLayout>
-                  <MyPurchaseOrders />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/my-purchase-orders/:id"
-            element={
-              <ProtectedRoute requireSupplier={true}>
-                <AppLayout>
-                  <MyPurchaseOrderDetails />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/my-invoices"
-            element={
-              <ProtectedRoute requireSupplier={true}>
-                <AppLayout>
-                  <MyInvoices />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/my-invoices/:id"
-            element={
-              <ProtectedRoute requireSupplier={true}>
-                <AppLayout>
-                  <MyInvoiceDetails />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
+            {/* Supplier Routes */}
+            <Route 
+              path="/profile"
+              element={
+                <ProtectedRoute requireSupplier={true}>
+                  <AppLayout>
+                    <MyProfile />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/my-documents"
+              element={
+                <ProtectedRoute requireSupplier={true}>
+                  <AppLayout>
+                    <MyDocuments />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/my-contracts"
+              element={
+                <ProtectedRoute requireSupplier={true}>
+                  <AppLayout>
+                    <MyContracts />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/my-contracts/:id"
+              element={
+                <ProtectedRoute requireSupplier={true}>
+                  <AppLayout>
+                    <MyContractDetails />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/my-purchase-orders"
+              element={
+                <ProtectedRoute requireSupplier={true}>
+                  <AppLayout>
+                    <MyPurchaseOrders />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/my-purchase-orders/:id"
+              element={
+                <ProtectedRoute requireSupplier={true}>
+                  <AppLayout>
+                    <MyPurchaseOrderDetails />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/my-invoices"
+              element={
+                <ProtectedRoute requireSupplier={true}>
+                  <AppLayout>
+                    <MyInvoices />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/my-invoices/:id"
+              element={
+                <ProtectedRoute requireSupplier={true}>
+                  <AppLayout>
+                    <MyInvoiceDetails />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
 
-          {/* Super Admin Routes */}
-          <Route 
-            path="/companies"
-            element={
-              <ProtectedRoute requireSuperAdmin={true}>
-                <AppLayout>
-                  <Companies />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/companies/new"
-            element={
-              <ProtectedRoute requireSuperAdmin={true}>
-                <AppLayout>
-                  <CompanyForm />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/companies/:id"
-            element={
-              <ProtectedRoute requireSuperAdmin={true}>
-                <AppLayout>
-                  <CompanyDetails />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/companies/:id/edit"
-            element={
-              <ProtectedRoute requireSuperAdmin={true}>
-                <AppLayout>
-                  <CompanyForm isEditing={true} />
-                </AppLayout>
-              </ProtectedRoute>
-            } 
-          />
-        </Routes>
+            {/* Super Admin Routes */}
+            <Route 
+              path="/companies"
+              element={
+                <ProtectedRoute requireSuperAdmin={true}>
+                  <AppLayout>
+                    <Companies />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/companies/new"
+              element={
+                <ProtectedRoute requireSuperAdmin={true}>
+                  <AppLayout>
+                    <CompanyForm />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/companies/:id"
+              element={
+                <ProtectedRoute requireSuperAdmin={true}>
+                  <AppLayout>
+                    <CompanyDetails />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/companies/:id/edit"
+              element={
+                <ProtectedRoute requireSuperAdmin={true}>
+                  <AppLayout>
+                    <CompanyForm isEditing={true} />
+                  </AppLayout>
+                </ProtectedRoute>
+              } 
+            />
+          </Routes>
+        </LanguageProvider>
       </AuthProvider>
     </Router>
   );
