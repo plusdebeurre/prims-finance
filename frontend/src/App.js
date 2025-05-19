@@ -1156,10 +1156,7 @@ const GenerateContractForm = () => {
     setError(null);
     
     try {
-      await axios.post(`${API}/contracts`, {
-        ...formData,
-        company_id: "current_company_id" // This would come from the current user's company
-      });
+      await axios.post(`${API}/contracts`, formData);
       
       navigate("/contracts");
     } catch (error) {
