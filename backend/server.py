@@ -21,7 +21,7 @@ import jwt
 from passlib.context import CryptContext
 
 # Import our models
-from models import *
+from backend.models import *
 
 # Set up root directory and load environment variables
 ROOT_DIR = Path(__file__).parent
