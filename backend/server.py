@@ -164,7 +164,7 @@ class ContractBase(BaseModel):
     status: str = "draft"  # draft, pending_signature, signed, expired, cancelled
 
 class ContractCreate(ContractBase):
-    company_id: str
+    pass
 
 class ContractUpdate(BaseModel):
     name: Optional[str] = None
