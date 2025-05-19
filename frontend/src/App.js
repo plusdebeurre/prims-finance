@@ -5,7 +5,9 @@ import "./App.css";
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext";
 
 // API Configuration
+console.log("ENV VARS:", { REACT_APP_BACKEND_URL: process.env.REACT_APP_BACKEND_URL });
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8001";
+console.log("Using backend URL:", BACKEND_URL);
 const API = `${BACKEND_URL}/api`;
 
 // Auth Context
