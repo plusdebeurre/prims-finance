@@ -162,6 +162,16 @@ export const translations = {
     back: 'Retour',
     saving: 'Enregistrement...',
     
+    // Landing Page
+    landing_tagline: 'Une plateforme complète pour gérer les documents financiers, les contrats et les relations avec les fournisseurs.',
+    landing_feature1_title: 'Gestion de Documents',
+    landing_feature1_desc: 'Stockez, organisez et gérez en toute sécurité tous vos documents financiers en un seul endroit.',
+    landing_feature2_title: 'Accès Sécurisé',
+    landing_feature2_desc: 'Le contrôle d\'accès basé sur les rôles garantit que les données ne sont accessibles qu\'au personnel autorisé.',
+    landing_feature3_title: 'Compatible Mobile',
+    landing_feature3_desc: 'Accédez à vos informations financières à tout moment, n\'importe où, depuis n\'importe quel appareil.',
+    landing_login_button: 'Accéder à Votre Compte',
+    
     // Authentication
     sign_in: 'Se connecter',
     sign_out: 'Se déconnecter',
