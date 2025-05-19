@@ -1350,10 +1350,10 @@ const ContractDetail = () => {
   
   const handleGenerateContract = async () => {
     try {
-      await axios.post(`${API}/contracts/${contractId}/generate`);
+      await contractsAPI.generate(contractId);
       
       // Refresh contract data
-      const response = await axios.get(`${API}/contracts/${contractId}`);
+      const response = await contractsAPI.getById(contractId);
       setContract(response.data);
     } catch (error) {
       console.error("Error generating contract:", error);
@@ -1363,10 +1363,10 @@ const ContractDetail = () => {
   
   const handleSignContract = async () => {
     try {
-      await axios.post(`${API}/contracts/${contractId}/sign`);
+      await contractsAPI.sign(contractId);
       
       // Refresh contract data
-      const response = await axios.get(`${API}/contracts/${contractId}`);
+      const response = await contractsAPI.getById(contractId);
       setContract(response.data);
     } catch (error) {
       console.error("Error signing contract:", error);
@@ -1375,7 +1375,7 @@ const ContractDetail = () => {
   };
   
   const handleDownloadContract = () => {
-    window.open(`${API}/contracts/${contractId}/download`, '_blank');
+    contractsAPI.download(contractId);
   };
   
   if (loading) {
