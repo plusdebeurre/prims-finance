@@ -1783,10 +1783,7 @@ const GeneralConditions = () => {
     setError(null);
     
     try {
-      await axios.post(`${API}/general-conditions`, {
-        ...generalConditions,
-        company_id: "current_company_id" // This would come from the current user's company
-      });
+      await axios.post(`${API}/general-conditions`, generalConditions);
       
       setSaving(false);
     } catch (error) {
