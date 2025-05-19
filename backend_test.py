@@ -207,13 +207,38 @@ def run_tests():
     
     tester = PrismFinanceAPITester(backend_url)
     
+    # Test supplier registration
+    print("\n📋 Testing supplier registration...")
+    test_email = f"test_supplier_{int(time.time())}@example.com"
+    test_password = "Password123!"
+    success, supplier_data = tester.test_register_supplier(test_email, test_password)
+    
+    if success:
+        print(f"✅ Supplier registration successful")
+        
+        # Test login with the new supplier account
+        print("\n📋 Testing login with new supplier account...")
+        if tester.test_login(test_email, test_password):
+            print("✅ Supplier login successful")
+            
+            # Test supplier-specific endpoints
+            print("\n📋 Testing supplier-specific endpoints...")
+            tester.test_auth_endpoints()
+        else:
+            print("❌ Supplier login failed")
+    else:
+        print("❌ Supplier registration failed")
+    
+    # Reset token and login as admin to test admin features
+    tester.token = None
+    
     # Test login with admin credentials
     if not tester.test_login("admin@prismfinance.com", "admin123"):
-        print("❌ Login failed, stopping tests")
+        print("❌ Admin login failed, stopping tests")
         return 1
     
     # Run all endpoint tests
-    print("\n📋 Testing API endpoints...")
+    print("\n📋 Testing admin API endpoints...")
     
     tests = [
         ("Authentication", tester.test_auth_endpoints),
