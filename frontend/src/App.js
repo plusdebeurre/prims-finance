@@ -299,9 +299,14 @@ const Login = () => {
     setLoading(true);
     setError("");
     
-    console.log("Attempting login with:", email, password);
+    console.log("Submitting login form with:", email);
+    console.log("Backend API URL:", API);
     
     try {
+      // First, test if we can access the health endpoint
+      const healthResponse = await axios.get(`${BACKEND_URL}/api/health`);
+      console.log("Health check response:", healthResponse.data);
+      
       const success = await login(email, password);
       console.log("Login result:", success);
       
@@ -312,7 +317,7 @@ const Login = () => {
       }
     } catch (err) {
       console.error("Login exception:", err);
-      setError(t('login_failed') + ": " + err.message);
+      setError(t('login_failed') + ": " + (err.message || "Unknown error"));
     } finally {
       setLoading(false);
     }
