@@ -549,10 +549,7 @@ const SupplierForm = () => {
       if (supplierId) {
         await axios.put(`${API}/suppliers/${supplierId}`, supplier);
       } else {
-        await axios.post(`${API}/suppliers`, {
-          ...supplier,
-          company_id: "current_company_id" // This would come from the current user's company
-        });
+        await axios.post(`${API}/suppliers`, supplier);
       }
       
       navigate("/suppliers");
