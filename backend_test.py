@@ -5,8 +5,14 @@ import json
 from datetime import datetime
 
 # Get the backend URL from the frontend .env file
-BACKEND_URL = "https://9fa6a152-5e96-448d-a89b-d3e858a0d36a.preview.emergentagent.com"
+with open('/app/frontend/.env', 'r') as f:
+    for line in f:
+        if line.startswith('REACT_APP_BACKEND_URL='):
+            BACKEND_URL = line.strip().split('=')[1].strip('"\'')
+            break
+
 API_URL = f"{BACKEND_URL}/api"
+print(f"Using backend URL: {BACKEND_URL}")
 
 class PrismFinanceAPITest:
     def __init__(self):
