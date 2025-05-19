@@ -35,6 +35,10 @@ export const translations = {
     landing_feature3_title: 'Mobile Friendly',
     landing_feature3_desc: 'Access your financial information anytime, anywhere, from any device.',
     landing_login_button: 'Access Your Account',
+    landing_learn_more: 'Learn More',
+    landing_features_title: 'Powerful Features',
+    landing_features_subtitle: 'Everything you need to manage your financial documents and relationships.',
+    landing_footer_rights: 'All rights reserved.',
     
     // Authentication
     sign_in: 'Sign In',
