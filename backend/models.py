@@ -11,6 +11,15 @@ class UserRole(str, Enum):
     SUPPLIER = "supplier"
     SUPER_ADMIN = "super_admin"
 
+# Token data model for JWT
+class TokenData(BaseModel):
+    sub: str  # User ID
+    email: str
+    role: str
+    company_id: Optional[str] = None
+    supplier_id: Optional[str] = None
+    exp: Optional[int] = None  # Expiration timestamp
+
 # Base user model
 class UserBase(BaseModel):
     email: EmailStr
@@ -60,6 +69,7 @@ class User(UserBase):
 
     class Config:
         orm_mode = True
+        from_attributes = True  # V2 replacement for orm_mode
 
 # Supplier status
 class SupplierStatus(str, Enum):
@@ -96,6 +106,7 @@ class Supplier(SupplierBase):
 
     class Config:
         orm_mode = True
+        from_attributes = True  # V2 replacement for orm_mode
 
 # Contract template status
 class TemplateStatus(str, Enum):
@@ -133,6 +144,7 @@ class ContractTemplate(TemplateBase):
 
     class Config:
         orm_mode = True
+        from_attributes = True  # V2 replacement for orm_mode
 
 # Contract status
 class ContractStatus(str, Enum):
@@ -181,6 +193,7 @@ class Contract(ContractBase):
 
     class Config:
         orm_mode = True
+        from_attributes = True  # V2 replacement for orm_mode
 
 # Document status
 class DocumentStatus(str, Enum):
@@ -229,6 +242,7 @@ class Document(DocumentBase):
 
     class Config:
         orm_mode = True
+        from_attributes = True  # V2 replacement for orm_mode
 
 # Purchase order status
 class PurchaseOrderStatus(str, Enum):
@@ -308,6 +322,7 @@ class PurchaseOrder(PurchaseOrderBase):
 
     class Config:
         orm_mode = True
+        from_attributes = True  # V2 replacement for orm_mode
 
 # Notification types
 class NotificationType(str, Enum):
@@ -350,6 +365,10 @@ class Notification(NotificationBase):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     read_at: Optional[datetime] = None
 
+    class Config:
+        orm_mode = True
+        from_attributes = True  # V2 replacement for orm_mode
+
 # General conditions model
 class GeneralConditions(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -364,3 +383,4 @@ class GeneralConditions(BaseModel):
 
     class Config:
         orm_mode = True
+        from_attributes = True  # V2 replacement for orm_mode
