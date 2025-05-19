@@ -34,17 +34,10 @@ const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       console.log("Attempting to login with:", email);
-      const response = await axios.post(`${API}/auth/token`, new URLSearchParams({
-        'username': email,
-        'password': password
-      }), {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
-      });
+      const data = await authAPI.login(email, password);
       
       console.log("Login successful!");
-      const { access_token, user_id, is_admin, name } = response.data;
+      const { access_token, user_id, is_admin, name } = data;
       
       // Store token and user info
       localStorage.setItem("token", access_token);
@@ -61,7 +54,7 @@ const AuthProvider = ({ children }) => {
       setCurrentUser(user);
       
       // Configure axios to use token in all requests
-      axios.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
+      setAuthToken(access_token);
       
       return true;
     } catch (error) {
