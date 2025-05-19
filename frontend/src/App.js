@@ -946,7 +946,7 @@ const ContractsList = () => {
   useEffect(() => {
     const fetchContracts = async () => {
       try {
-        const response = await axios.get(`${API}/contracts`);
+        const response = await contractsAPI.getAll();
         setContracts(response.data);
         setLoading(false);
       } catch (error) {
