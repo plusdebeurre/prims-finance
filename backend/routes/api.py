@@ -29,4 +29,4 @@ router.include_router(general_conditions_router)
 # Health check endpoint
 @router.get("/health")
 async def health_check():
-    return {"status": "ok"}
+    return {"status": "ok", "message": "PRISM'FINANCE API is running"}
