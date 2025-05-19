@@ -145,7 +145,7 @@ const Navbar = () => {
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <Link to="/" className="gradient-text text-xl">
+              <Link to={isLoggedIn ? "/dashboard" : "/"} className="gradient-text text-xl">
                 {t('app_name')} ✨
               </Link>
             </div>
