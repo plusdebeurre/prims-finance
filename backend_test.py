@@ -19,18 +19,17 @@ class PrismFinanceAPITest:
         # Generate unique test data
         self.timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         self.test_supplier = {
-            "name": f"Test Supplier {self.timestamp}",
+            "company_name": f"Test Supplier {self.timestamp}",
             "siret": f"SIRET{self.timestamp}",
-            "vat_number": f"VAT{self.timestamp}",
-            "profession": "Test Profession",
+            "contact_name": f"Test Contact {self.timestamp}",
+            "email": f"test{self.timestamp}@example.com",
+            "phone": "+33123456789",
             "address": "123 Test Street",
             "postal_code": "75001",
             "city": "Paris",
             "country": "France",
-            "iban": f"FR7630001007941234567890185",
-            "bic": "BNPAFRPP",
-            "vat_rates": [20.0],
-            "emails": [f"test{self.timestamp}@example.com"]
+            "status": "pending",
+            "company_id": "current_company_id"  # This will be replaced with the actual company ID
         }
         self.created_supplier_id = None
         self.created_template_id = None
