@@ -298,15 +298,23 @@ const Login = () => {
     setLoading(true);
     setError("");
     
-    const success = await login(email, password);
+    console.log("Attempting login with:", email, password);
     
-    if (success) {
-      navigate("/dashboard");
-    } else {
-      setError(t('login_failed'));
+    try {
+      const success = await login(email, password);
+      console.log("Login result:", success);
+      
+      if (success) {
+        navigate("/dashboard");
+      } else {
+        setError(t('login_failed'));
+      }
+    } catch (err) {
+      console.error("Login exception:", err);
+      setError(t('login_failed') + ": " + err.message);
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
   
   return (
