@@ -415,12 +415,16 @@ async def get_admin_user(current_user: UserInDB = Depends(get_current_user)):
 
 # Extract variables from template
 def extract_variables_from_docx(file_path):
-    with open(file_path, "rb") as docx_file:
-        result = mammoth.extract_raw_text(docx_file)
-        text = result.value
-        # Look for variables in {{variable_name}} format
-        variables = re.findall(r'{{([^}]+)}}', text)
-        return list(set(variables))  # Remove duplicates
+    try:
+        with open(file_path, "rb") as docx_file:
+            result = mammoth.extract_raw_text(docx_file)
+            text = result.value
+            # Look for variables in {{variable_name}} format
+            variables = re.findall(r'{{([^}]+)}}', text)
+            return list(set(variables))  # Remove duplicates
+    except Exception as e:
+        logging.error(f"Error extracting variables from template: {str(e)}")
+        return []  # Return empty list if there's an error
 
 # Replace variables in template
 async def replace_variables_in_docx(template_path, output_path, variable_values):
