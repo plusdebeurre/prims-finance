@@ -4,13 +4,24 @@ import axios from "axios";
 import "./App.css";
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext";
 
-// Force HTTPS for all axios requests
-axios.defaults.baseURL = window.location.protocol === 'https:' ? 'https://9fa6a152-5e96-448d-a89b-d3e858a0d36a.preview.emergentagent.com' : 'http://localhost:8001';
-
-// API Configuration
-const BACKEND_URL = axios.defaults.baseURL;
-console.log("Using backend URL with correct protocol:", BACKEND_URL);
+// Force HTTPS for all API requests
+const BACKEND_URL = "https://9fa6a152-5e96-448d-a89b-d3e858a0d36a.preview.emergentagent.com";
 const API = `${BACKEND_URL}/api`;
+
+// Configure axios globally
+axios.defaults.baseURL = BACKEND_URL;
+
+// Add axios request interceptor to ensure HTTPS
+axios.interceptors.request.use((config) => {
+  // Ensure all URLs start with https://
+  if (config.url && config.url.startsWith('http:')) {
+    config.url = config.url.replace('http:', 'https:');
+  }
+  console.log('Request URL:', config.url);
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
 
 // Auth Context
 const AuthContext = React.createContext(null);
