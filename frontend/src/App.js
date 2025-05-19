@@ -1865,6 +1865,54 @@ const GeneralConditions = () => {
   );
 };
 
+// Landing Page Component
+const LandingPage = () => {
+  const navigate = useNavigate();
+  const { t } = useLanguage();
+  
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-indigo-500 to-purple-700">
+      <div className="container mx-auto px-4 py-16">
+        <div className="flex flex-col items-center text-center">
+          <h1 className="text-5xl font-extrabold text-white mb-8 gradient-text">
+            PRISM'FINANCE
+          </h1>
+          <p className="text-xl text-white mb-12 max-w-2xl">
+            {t('landing_tagline')}
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+            <div className="bg-white bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-lg p-6 text-white">
+              <div className="text-4xl mb-4">📄</div>
+              <h3 className="text-xl font-semibold mb-2">{t('landing_feature1_title')}</h3>
+              <p>{t('landing_feature1_desc')}</p>
+            </div>
+            
+            <div className="bg-white bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-lg p-6 text-white">
+              <div className="text-4xl mb-4">🔒</div>
+              <h3 className="text-xl font-semibold mb-2">{t('landing_feature2_title')}</h3>
+              <p>{t('landing_feature2_desc')}</p>
+            </div>
+            
+            <div className="bg-white bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-lg p-6 text-white">
+              <div className="text-4xl mb-4">📱</div>
+              <h3 className="text-xl font-semibold mb-2">{t('landing_feature3_title')}</h3>
+              <p>{t('landing_feature3_desc')}</p>
+            </div>
+          </div>
+          
+          <button 
+            className="btn-primary text-lg px-8 py-3 rounded-full"
+            onClick={() => navigate("/login")}
+          >
+            {t('landing_login_button')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Main App Component
 function App() {
   return (
@@ -1874,7 +1922,8 @@ function App() {
           <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
             <Routes>
               <Route path="/login" element={<Login />} />
-              <Route path="/" element={<>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/dashboard" element={<>
                 <Navbar />
                 <Home />
               </>} />
