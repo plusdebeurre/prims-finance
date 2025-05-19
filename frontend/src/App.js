@@ -1871,47 +1871,131 @@ const GeneralConditions = () => {
 // Landing Page Component
 const LandingPage = () => {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language, changeLanguage } = useLanguage();
+  
+  const toggleLanguage = () => {
+    changeLanguage(language === 'fr' ? 'en' : 'fr');
+  };
   
   return (
-    <div className="min-h-screen bg-gradient-to-b from-indigo-500 to-purple-700">
-      <div className="container mx-auto px-4 py-16">
-        <div className="flex flex-col items-center text-center">
-          <h1 className="text-5xl font-extrabold text-white mb-8 gradient-text">
-            PRISM'FINANCE
-          </h1>
-          <p className="text-xl text-white mb-12 max-w-2xl">
-            {t('landing_tagline')}
-          </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-            <div className="bg-white bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-lg p-6 text-white">
-              <div className="text-4xl mb-4">📄</div>
-              <h3 className="text-xl font-semibold mb-2">{t('landing_feature1_title')}</h3>
-              <p>{t('landing_feature1_desc')}</p>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Navigation Bar */}
+      <nav className="bg-white shadow-sm dark:bg-gray-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex">
+              <div className="flex-shrink-0 flex items-center">
+                <span className="gradient-text text-xl">
+                  {t('app_name')} ✨
+                </span>
+              </div>
             </div>
-            
-            <div className="bg-white bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-lg p-6 text-white">
-              <div className="text-4xl mb-4">🔒</div>
-              <h3 className="text-xl font-semibold mb-2">{t('landing_feature2_title')}</h3>
-              <p>{t('landing_feature2_desc')}</p>
-            </div>
-            
-            <div className="bg-white bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-lg p-6 text-white">
-              <div className="text-4xl mb-4">📱</div>
-              <h3 className="text-xl font-semibold mb-2">{t('landing_feature3_title')}</h3>
-              <p>{t('landing_feature3_desc')}</p>
+            <div className="flex items-center">
+              <button
+                className="ml-3 px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700 flex items-center"
+                onClick={toggleLanguage}
+              >
+                <span className="mr-2">{language === 'fr' ? '🇫🇷' : '🇬🇧'}</span>
+                <span>{language === 'fr' ? 'FR' : 'EN'}</span>
+              </button>
+              
+              <button 
+                className="btn-primary ml-3"
+                onClick={() => navigate("/login")}
+              >
+                {t('sign_in')}
+              </button>
             </div>
           </div>
-          
-          <button 
-            className="btn-primary text-lg px-8 py-3 rounded-full"
-            onClick={() => navigate("/login")}
-          >
-            {t('landing_login_button')}
-          </button>
+        </div>
+      </nav>
+      
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
+        <div className="max-w-7xl mx-auto py-16 px-4 sm:py-24 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h1 className="text-4xl font-extrabold sm:text-5xl md:text-6xl">
+              <span className="block">PRISM'FINANCE</span>
+              <span className="block text-indigo-200 mt-2 text-2xl sm:text-3xl">
+                {t('landing_tagline')}
+              </span>
+            </h1>
+            <div className="mt-10">
+              <a
+                href="#features"
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-indigo-700 bg-white hover:bg-gray-50 shadow-md"
+              >
+                {t('landing_learn_more')}
+              </a>
+              <button
+                onClick={() => navigate("/login")}
+                className="inline-flex items-center ml-4 px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-800 hover:bg-indigo-900 shadow-md"
+              >
+                {t('landing_login_button')}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
+      
+      {/* Features Section */}
+      <div id="features" className="py-16 bg-white dark:bg-gray-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white sm:text-4xl">
+              {t('landing_features_title')}
+            </h2>
+            <p className="mt-4 text-lg text-gray-500 dark:text-gray-300">
+              {t('landing_features_subtitle')}
+            </p>
+          </div>
+          
+          <div className="mt-16">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 shadow-md">
+                <div className="text-4xl mb-4">📄</div>
+                <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">
+                  {t('landing_feature1_title')}
+                </h3>
+                <p className="text-gray-500 dark:text-gray-300">
+                  {t('landing_feature1_desc')}
+                </p>
+              </div>
+              
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 shadow-md">
+                <div className="text-4xl mb-4">🔒</div>
+                <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">
+                  {t('landing_feature2_title')}
+                </h3>
+                <p className="text-gray-500 dark:text-gray-300">
+                  {t('landing_feature2_desc')}
+                </p>
+              </div>
+              
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 shadow-md">
+                <div className="text-4xl mb-4">📱</div>
+                <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">
+                  {t('landing_feature3_title')}
+                </h3>
+                <p className="text-gray-500 dark:text-gray-300">
+                  {t('landing_feature3_desc')}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Footer */}
+      <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+        <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <p className="text-base text-gray-400 dark:text-gray-500">
+              &copy; 2025 PRISM'FINANCE. {t('landing_footer_rights')}
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
