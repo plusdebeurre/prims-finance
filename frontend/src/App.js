@@ -5,7 +5,7 @@ import "./App.css";
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext";
 
 // API Configuration
-const BACKEND_URL = "https://9fa6a152-5e96-448d-a89b-d3e858a0d36a.preview.emergentagent.com"; // Use the public URL instead of localhost
+const BACKEND_URL = "https://9fa6a152-5e96-448d-a89b-d3e858a0d36a.preview.emergentagent.com"; // Use the public URL with HTTPS
 console.log("Using public preview URL:", BACKEND_URL);
 const API = `${BACKEND_URL}/api`;
 
