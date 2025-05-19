@@ -1745,7 +1745,7 @@ const GeneralConditions = () => {
   useEffect(() => {
     const fetchGeneralConditions = async () => {
       try {
-        const response = await axios.get(`${API}/general-conditions/active`);
+        const response = await generalConditionsAPI.getActive();
         setGeneralConditions(response.data);
         setLoading(false);
       } catch (error) {
