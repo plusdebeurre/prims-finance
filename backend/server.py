@@ -1131,18 +1131,31 @@ async def startup_db_client():
     # Create default admin user if no users exist
     user_count = await db.users.count_documents({})
     if user_count == 0:
+        # Create default company
+        company_id = str(uuid.uuid4())
+        default_company = {
+            "id": company_id,
+            "name": "PRISM'FINANCE",
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+            "is_active": True
+        }
+        await db.companies.insert_one(default_company)
+        
+        # Create default admin user
         default_admin = {
             "id": str(uuid.uuid4()),
             "email": "admin@prismfinance.com",
             "name": "Admin",
             "role": "super_admin",
             "password_hash": get_password_hash("admin123"),
+            "company_id": company_id,
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow(),
             "is_active": True
         }
         await db.users.insert_one(default_admin)
-        print("INFO - Created default admin user")
+        print("INFO - Created default admin user and company")
 
 # Database shutdown
 @app.on_event("shutdown")
