@@ -183,10 +183,11 @@ const Navbar = () => {
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
             <button
-              className="ml-3 px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
+              className="ml-3 px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700 flex items-center"
               onClick={toggleLanguage}
             >
-              {language === 'fr' ? '🇫🇷 FR' : '🇬🇧 EN'}
+              <span className="mr-2">{language === 'fr' ? '🇫🇷' : '🇬🇧'}</span>
+              <span>{language === 'fr' ? 'FR' : 'EN'}</span>
             </button>
             
             {!isLoggedIn ? (
