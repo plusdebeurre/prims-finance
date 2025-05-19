@@ -1,312 +1,334 @@
-from pydantic import BaseModel, Field, EmailStr
-from typing import List, Optional, Dict, Any, Union
-from datetime import datetime, timedelta
+from pydantic import BaseModel, Field, EmailStr, validator, root_validator
+from typing import List, Dict, Optional, Any, Union
 from enum import Enum
+from datetime import datetime
 import uuid
+import re
 
-# Enum definitions
-class SupplierType(str, Enum):
-    INDIVIDUAL = "entreprise_individuelle"
-    SAS = "sas"
-    SARL = "sarl"
-    EURL = "eurl"
-    AUTO_ENTREPRENEUR = "auto_entrepreneur"
-    ARTISTE_AUTEUR = "artiste_auteur"
-
+# User roles
 class UserRole(str, Enum):
-    SUPER_ADMIN = "super_admin"
     ADMIN = "admin"
     SUPPLIER = "supplier"
+    SUPER_ADMIN = "super_admin"
 
-class ContractStatus(str, Enum):
-    DRAFT = "draft"
-    SUPPLIER_SIGNED = "supplier_signed"
-    ADMIN_SIGNED = "admin_signed"
-    SIGNED = "signed"
-    EXPIRED = "expired"
-
-class DocumentStatus(str, Enum):
-    PENDING = "pending"
-    VALIDATED = "validated"
-    REJECTED = "rejected"
-    EXPIRED = "expired"
-
-class InvoiceStatus(str, Enum):
-    PENDING = "pending"
-    APPROVED = "approved"
-    PAID = "paid"
-    REJECTED = "rejected"
-
-class DocumentCategory(str, Enum):
-    JUSTIFICATIF = "justificatif"
-    DEVIS = "devis"
-    FACTURE = "facture"
-    CONTRAT = "contrat"
-    AUTRE = "autre"
-
-# Auth models
+# Base user model
 class UserBase(BaseModel):
-    email: str
+    email: EmailStr
     name: Optional[str] = None
-    role: UserRole
+    role: UserRole = UserRole.SUPPLIER
     company_id: Optional[str] = None
     supplier_id: Optional[str] = None
+    is_active: bool = True
 
+# Company data model
+class CompanyData(BaseModel):
+    name: str
+    company_type: Optional[str] = None
+    address: Optional[str] = None
+    postal_code: Optional[str] = None
+    city: Optional[str] = None
+    country: Optional[str] = "France"
+    registration_number: Optional[str] = None
+    registration_city: Optional[str] = None
+    representative_name: Optional[str] = None
+    representative_role: Optional[str] = None
+    phone: Optional[str] = None
+
+# User creation model
 class UserCreate(UserBase):
     password: str
+    company_data: Optional[CompanyData] = None
+    accepted_conditions_id: Optional[str] = None
 
+# User update model
 class UserUpdate(BaseModel):
     name: Optional[str] = None
-    password: Optional[str] = None
     current_password: Optional[str] = None
     new_password: Optional[str] = None
-    company_data: Optional[Dict[str, Any]] = None
+    company_data: Optional[CompanyData] = None
 
+# Password update model
 class UserPasswordUpdate(BaseModel):
     current_password: str
     new_password: str
 
+# Complete user model
 class User(UserBase):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    last_login: Optional[datetime] = None
-    settings: Dict[str, Any] = {}
+    updated_at: Optional[datetime] = None
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-    user_id: str
-    role: UserRole
-    name: Optional[str] = None
-    company_id: Optional[str] = None
-    supplier_id: Optional[str] = None
+    class Config:
+        orm_mode = True
 
-class TokenData(BaseModel):
-    user_id: Optional[str] = None
+# Supplier status
+class SupplierStatus(str, Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    PENDING = "pending"
+    BLOCKED = "blocked"
 
-# Client company models
-class ClientCompany(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    name: str
-    logo_url: Optional[str] = None
-    settings: Dict[str, Any] = {
-        "require_po": False,
-        "require_signature": True,
-        "forward_invoices_email": None,
-        "default_document_validity": 180,  # days
-    }
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-
-class ClientCompanyCreate(BaseModel):
-    name: str
-    settings: Optional[Dict[str, Any]] = None
-
-class ClientCompanyUpdate(BaseModel):
-    name: Optional[str] = None
-    logo_url: Optional[str] = None
-    settings: Optional[Dict[str, Any]] = None
-
-# Supplier models
+# Supplier base model
 class SupplierBase(BaseModel):
     name: str
-    type: SupplierType = SupplierType.SAS
-    siret: str
-    vat_number: str
-    profession: Optional[str] = None
-    address: Optional[str] = None
-    postal_code: Optional[str] = None
-    city: Optional[str] = None
-    insee_code: Optional[str] = None
-    country: Optional[str] = None
-    iban: str
-    bic: Optional[str] = None
-    vat_rates: List[float] = [20.0]
-    vat_exigibility: Optional[str] = None
-    payment_rule: Optional[str] = None
-    notes: Optional[str] = None
-    emails: List[str]
-    contract_variables: Optional[Dict[str, Any]] = {}
-    client_company_id: str
+    email: EmailStr
+    company_data: Optional[CompanyData] = None
+    status: SupplierStatus = SupplierStatus.ACTIVE
 
+# Supplier creation model
 class SupplierCreate(SupplierBase):
     pass
 
+# Supplier update model
+class SupplierUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    company_data: Optional[CompanyData] = None
+    status: Optional[SupplierStatus] = None
+
+# Complete supplier model
 class Supplier(SupplierBase):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    documents: Optional[List[str]] = None
+    contracts: Optional[List[str]] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: Optional[datetime] = None
 
-# Document type models
-class DocumentTypeBase(BaseModel):
+    class Config:
+        orm_mode = True
+
+# Contract template status
+class TemplateStatus(str, Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    DRAFT = "draft"
+
+# Contract template base model
+class TemplateBase(BaseModel):
     name: str
-    required_for: List[SupplierType] = []
-    validity_period: Optional[int] = None  # in days
+    description: Optional[str] = None
+    language: str = "fr"
     is_active: bool = True
-    client_company_id: str
 
-class DocumentTypeCreate(DocumentTypeBase):
-    pass
-
-class DocumentType(DocumentTypeBase):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    created_by: str  # user_id
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-
-# Document models
-class DocumentBase(BaseModel):
-    supplier_id: str
-    document_type_id: Optional[str] = None
-    category: DocumentCategory
-    name: str
+# Contract template creation model
+class TemplateCreate(TemplateBase):
     file_path: str
-    expiry_date: Optional[datetime] = None
-    status: DocumentStatus = DocumentStatus.PENDING
-    client_company_id: str
 
-class DocumentCreate(DocumentBase):
-    pass
+# Contract template update model
+class TemplateUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    language: Optional[str] = None
+    is_active: Optional[bool] = None
+    file_path: Optional[str] = None
 
-class Document(DocumentBase):
+# Complete contract template model
+class ContractTemplate(TemplateBase):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    uploaded_by: str  # user_id
-    upload_date: datetime = Field(default_factory=datetime.utcnow)
-    validated_by: Optional[str] = None  # user_id
-    validation_date: Optional[datetime] = None
-    validation_notes: Optional[str] = None
-
-# Contract template models
-class ContractTemplateBase(BaseModel):
-    name: str
     file_path: str
-    variables: List[str] = []
-    validity_period: Optional[int] = None  # in days
-    client_company_id: str
-
-class ContractTemplateCreate(BaseModel):
-    name: str
-
-class ContractTemplate(ContractTemplateBase):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    created_by: str  # user_id
+    created_by: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: Optional[datetime] = None
+    contracts_count: Optional[int] = 0
 
-# Contract models
+    class Config:
+        orm_mode = True
+
+# Contract status
+class ContractStatus(str, Enum):
+    DRAFT = "Draft"
+    PENDING_SIGNATURE = "Pending Signature"
+    SIGNED = "Signed"
+    EXPIRED = "Expired"
+    CANCELLED = "Cancelled"
+
+# Signature info
+class SignatureInfo(BaseModel):
+    name: str
+    title: str
+    date: datetime = Field(default_factory=datetime.utcnow)
+
+# Contract base model
 class ContractBase(BaseModel):
-    supplier_id: str
+    name: str
     template_id: str
-    file_path: str
-    variables: Dict[str, Any] = {}
+    supplier_id: str
     status: ContractStatus = ContractStatus.DRAFT
+    variables: Optional[Dict[str, str]] = {}
     expiry_date: Optional[datetime] = None
-    client_company_id: str
 
-class ContractCreate(BaseModel):
-    supplier_id: str
-    template_id: str
-    variables: Dict[str, Any] = {}
+# Contract creation model
+class ContractCreate(ContractBase):
+    pass
 
+# Contract update model
+class ContractUpdate(BaseModel):
+    name: Optional[str] = None
+    status: Optional[ContractStatus] = None
+    variables: Optional[Dict[str, str]] = None
+    expiry_date: Optional[datetime] = None
+
+# Complete contract model
 class Contract(ContractBase):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    created_by: str  # user_id
+    file_path: Optional[str] = None
+    created_by: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    supplier_signed_at: Optional[datetime] = None
-    supplier_signed_by: Optional[Dict[str, str]] = None  # { name, surname }
-    admin_signed_at: Optional[datetime] = None
-    admin_signed_by: Optional[Dict[str, str]] = None  # { name, surname }
-    content: Optional[str] = None  # Base64 encoded content
+    updated_at: Optional[datetime] = None
+    supplier_signature: Optional[SignatureInfo] = None
+    admin_signature: Optional[SignatureInfo] = None
+    activity_log: Optional[List[Dict[str, Any]]] = None
 
-# General conditions models
-class GeneralConditionsBase(BaseModel):
-    version: str
-    issue_date: datetime = Field(default_factory=datetime.utcnow)
-    content: str
-    is_active: bool = True
-    client_company_id: str
+    class Config:
+        orm_mode = True
 
-class GeneralConditionsCreate(GeneralConditionsBase):
-    pass
+# Document status
+class DocumentStatus(str, Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
 
-class GeneralConditions(GeneralConditionsBase):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    created_by: str  # user_id
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+# Document category
+class DocumentCategory(str, Enum):
+    JUSTIFICATIFS = "justificatifs"
+    DEVIS = "devis"
+    FACTURES = "factures"
+    AUTRE = "autre"
 
-# GC acceptance model
-class SupplierGCAcceptance(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+# Document base model
+class DocumentBase(BaseModel):
+    name: str
     supplier_id: str
-    gc_id: str
-    accepted_at: datetime = Field(default_factory=datetime.utcnow)
-    accepted_by: str  # user_id
-    ip_address: Optional[str] = None
-    client_company_id: str
+    type: str
+    category: DocumentCategory = DocumentCategory.AUTRE
+    status: DocumentStatus = DocumentStatus.PENDING
+    comment: Optional[str] = None
 
-# Purchase order models
+# Document creation model
+class DocumentCreate(DocumentBase):
+    file_path: str
+
+# Document update model
+class DocumentUpdate(BaseModel):
+    name: Optional[str] = None
+    type: Optional[str] = None
+    category: Optional[DocumentCategory] = None
+    status: Optional[DocumentStatus] = None
+    comment: Optional[str] = None
+
+# Complete document model
+class Document(DocumentBase):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    file_path: str
+    file_name: str
+    file_url: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: Optional[datetime] = None
+    reviewed_by: Optional[str] = None
+    reviewed_at: Optional[datetime] = None
+
+    class Config:
+        orm_mode = True
+
+# Purchase order status
+class PurchaseOrderStatus(str, Enum):
+    DRAFT = "draft"
+    SENT = "sent"
+    ACCEPTED = "accepted"
+    FULFILLED = "fulfilled"
+    CANCELLED = "cancelled"
+
+# Purchase order item
 class PurchaseOrderItem(BaseModel):
     description: str
     quantity: float
     unit_price: float
-    unit: str = "unité"
-    vat_rate: float = 20.0
-    total_price: float
+    unit: Optional[str] = None
+    tax_rate: Optional[float] = 20.0  # Default VAT rate in France
+    total_price: Optional[float] = None
 
+    @validator('total_price', pre=True, always=True)
+    def calculate_total_price(cls, v, values):
+        if v is not None:
+            return v
+        if 'quantity' in values and 'unit_price' in values:
+            return round(values['quantity'] * values['unit_price'], 2)
+        return 0
+
+# Purchase order base model
 class PurchaseOrderBase(BaseModel):
+    reference: str
     supplier_id: str
+    issue_date: datetime = Field(default_factory=datetime.utcnow)
+    delivery_date: Optional[datetime] = None
     items: List[PurchaseOrderItem]
-    total_amount: float
-    status: str = "draft"  # draft, sent, signed, cancelled
+    status: PurchaseOrderStatus = PurchaseOrderStatus.DRAFT
     notes: Optional[str] = None
-    require_signature: bool = False
-    client_company_id: str
+    terms: Optional[str] = None
+    total_amount: Optional[float] = None
+    tax_amount: Optional[float] = None
 
+    @validator('total_amount', pre=True, always=True)
+    def calculate_total_amount(cls, v, values):
+        if v is not None:
+            return v
+        if 'items' in values:
+            return round(sum(item.total_price for item in values['items']), 2)
+        return 0
+
+    @validator('tax_amount', pre=True, always=True)
+    def calculate_tax_amount(cls, v, values):
+        if v is not None:
+            return v
+        if 'items' in values:
+            return round(sum(item.total_price * (item.tax_rate / 100) for item in values['items']), 2)
+        return 0
+
+# Purchase order creation model
 class PurchaseOrderCreate(PurchaseOrderBase):
     pass
 
+# Purchase order update model
+class PurchaseOrderUpdate(BaseModel):
+    issue_date: Optional[datetime] = None
+    delivery_date: Optional[datetime] = None
+    items: Optional[List[PurchaseOrderItem]] = None
+    status: Optional[PurchaseOrderStatus] = None
+    notes: Optional[str] = None
+    terms: Optional[str] = None
+
+# Complete purchase order model
 class PurchaseOrder(PurchaseOrderBase):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    created_by: str  # user_id
+    created_by: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    sent_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    signed_by: Optional[str] = None
     signed_at: Optional[datetime] = None
-    cancelled_at: Optional[datetime] = None
-    signer_name: Optional[str] = None
-    signer_surname: Optional[str] = None
 
-# Invoice models
-class InvoiceBase(BaseModel):
-    supplier_id: str
-    file_path: str
-    amount: float
-    due_date: datetime
-    status: InvoiceStatus = InvoiceStatus.PENDING
-    purchase_order_id: Optional[str] = None
-    notes: Optional[str] = None
-    client_company_id: str
+    class Config:
+        orm_mode = True
 
-class InvoiceCreate(InvoiceBase):
-    pass
-
-class Invoice(InvoiceBase):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    uploaded_by: str  # user_id
-    upload_date: datetime = Field(default_factory=datetime.utcnow)
-    approved_by: Optional[str] = None
-    approval_date: Optional[datetime] = None
-    payment_date: Optional[datetime] = None
-    forwarded: bool = False
-
-# Notification models
+# Notification types
 class NotificationType(str, Enum):
     CONTRACT_CREATED = "contract_created"
     CONTRACT_SIGNED = "contract_signed"
-    DOCUMENT_UPLOADED = "document_uploaded"
-    DOCUMENT_VALIDATED = "document_validated"
+    CONTRACT_REJECTED = "contract_rejected"
+    CONTRACT_EXPIRED = "contract_expired"
+    DOCUMENT_APPROVED = "document_approved"
     DOCUMENT_REJECTED = "document_rejected"
-    INVOICE_UPLOADED = "invoice_uploaded"
-    INVOICE_APPROVED = "invoice_approved"
-    INVOICE_PAID = "invoice_paid"
     PO_CREATED = "po_created"
+    PO_UPDATED = "po_updated"
+    PO_ACCEPTED = "po_accepted"
+    PO_REJECTED = "po_rejected"
+    PO_FULFILLED = "po_fulfilled"
+    PO_CANCELLED = "po_cancelled"
+    INVOICE_RECEIVED = "invoice_received"
+    INVOICE_PAID = "invoice_paid"
+    INVOICE_OVERDUE = "invoice_overdue"
+    SUPPLIER_REGISTERED = "supplier_registered"
+    SUPPLIER_UPDATED = "supplier_updated"
+    SUPPLIER_DOCUMENTS_PENDING = "supplier_documents_pending"
     PO_SIGNED = "po_signed"
     GC_ACCEPTANCE_REQUIRED = "gc_acceptance_required"
 
@@ -327,3 +349,18 @@ class Notification(NotificationBase):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     created_at: datetime = Field(default_factory=datetime.utcnow)
     read_at: Optional[datetime] = None
+
+# General conditions model
+class GeneralConditions(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    content: str
+    version: str
+    is_active: bool = False
+    created_by: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_by: Optional[str] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        orm_mode = True
