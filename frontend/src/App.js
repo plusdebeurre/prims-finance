@@ -750,7 +750,7 @@ const SupplierDetail = () => {
   useEffect(() => {
     const fetchSupplier = async () => {
       try {
-        const response = await axios.get(`${API}/suppliers/${supplierId}`);
+        const response = await suppliersAPI.getById(supplierId);
         setSupplier(response.data);
         setLoading(false);
       } catch (error) {
