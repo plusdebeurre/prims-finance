@@ -388,7 +388,7 @@ const SuppliersList = () => {
   useEffect(() => {
     const fetchSuppliers = async () => {
       try {
-        const response = await axios.get(`${API}/suppliers`);
+        const response = await suppliersAPI.getAll();
         setSuppliers(response.data);
         setLoading(false);
       } catch (error) {
