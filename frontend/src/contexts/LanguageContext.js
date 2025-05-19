@@ -175,6 +175,10 @@ export const translations = {
     landing_feature3_title: 'Compatible Mobile',
     landing_feature3_desc: 'Accédez à vos informations financières à tout moment, n\'importe où, depuis n\'importe quel appareil.',
     landing_login_button: 'Accéder à Votre Compte',
+    landing_learn_more: 'En Savoir Plus',
+    landing_features_title: 'Fonctionnalités Puissantes',
+    landing_features_subtitle: 'Tout ce dont vous avez besoin pour gérer vos documents financiers et vos relations.',
+    landing_footer_rights: 'Tous droits réservés.',
     
     // Authentication
     sign_in: 'Se connecter',
