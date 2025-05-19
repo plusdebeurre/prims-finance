@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Link, useNavigate, useParams, useLocation
 import axios from "axios";
 import "./App.css";
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext";
-import { authAPI, suppliersAPI, contractsAPI, templatesAPI, generalConditionsAPI, setAuthToken } from "./api";
+import { authAPI, suppliersAPI, contractsAPI, templatesAPI, generalConditionsAPI, setAuthToken, API, BACKEND_URL } from "./api";
 
 // Auth Context
 const AuthContext = React.createContext(null);
