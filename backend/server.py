@@ -602,8 +602,11 @@ async def create_supplier(
         supplier_dict["created_at"] = datetime.utcnow()
         supplier_dict["updated_at"] = datetime.utcnow()
         
-        # Use current user's company_id
-        supplier_dict["company_id"] = current_user.company_id or "default_company"
+        # Use current user's company_id or a default value
+        supplier_dict["company_id"] = current_user.company_id if current_user.company_id else "default_company"
+        
+        # Log for debugging
+        logging.info(f"Creating supplier with data: {supplier_dict}")
         
         await db.suppliers.insert_one(supplier_dict)
         
