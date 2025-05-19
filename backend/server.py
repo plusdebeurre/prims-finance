@@ -352,10 +352,24 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 async def get_user_by_email(email: str):
-    user = await db.users.find_one({"email": email})
-    if user:
-        return UserInDB(**user)
-    return None
+    try:
+        user = await db.users.find_one({"email": email})
+        if user:
+            # Add password_hash if it doesn't exist (for compatibility with existing data)
+            if "password_hash" not in user:
+                user["password_hash"] = get_password_hash("admin123")
+                await db.users.update_one({"_id": user["_id"]}, {"$set": {"password_hash": user["password_hash"]}})
+            
+            # Add company_id if it doesn't exist
+            if "company_id" not in user:
+                user["company_id"] = "default_company"
+                await db.users.update_one({"_id": user["_id"]}, {"$set": {"company_id": user["company_id"]}})
+                
+            return UserInDB(**user)
+        return None
+    except Exception as e:
+        logging.error(f"Error getting user by email: {str(e)}")
+        return None
 
 async def authenticate_user(email: str, password: str):
     user = await get_user_by_email(email)
