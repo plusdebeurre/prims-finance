@@ -212,29 +212,40 @@ class PrismFinanceAPITest:
             if not self.test_06_upload_contract_template():
                 return False
             
-        # Prepare form data
-        data = {
-            'supplier_id': self.created_supplier_id,
-            'template_id': self.created_template_id,
-            'variables': json.dumps({
+        # Create contract
+        contract_data = {
+            "name": f"Test Contract {self.timestamp}",
+            "supplier_id": self.created_supplier_id,
+            "template_id": self.created_template_id,
+            "company_id": "current_company_id",  # This would come from the current user's company
+            "variable_values": {
                 "variable1": "Test Value 1",
                 "variable2": "Test Value 2"
-            })
+            }
         }
         
-        # For multipart/form-data, we need to remove Content-Type from headers
-        headers = {'Authorization': f'Bearer {self.token}'} if self.token else {}
-        
-        response = requests.post(f"{API_URL}/contracts/generate", data=data, headers=headers)
-        print(f"POST /contracts/generate status code: {response.status_code}")
+        response = requests.post(f"{API_URL}/contracts", json=contract_data, headers=self.headers)
+        print(f"POST /contracts status code: {response.status_code}")
         
         if response.status_code == 200:
-            print("✅ POST /contracts/generate successful")
+            print("✅ POST /contracts successful")
             contract = response.json()
-            print(f"✅ Generated contract with ID: {contract['id']}")
-            return True
+            contract_id = contract['id']
+            print(f"✅ Created contract with ID: {contract_id}")
+            
+            # Generate contract document
+            generate_response = requests.post(f"{API_URL}/contracts/{contract_id}/generate", headers=self.headers)
+            print(f"POST /contracts/{contract_id}/generate status code: {generate_response.status_code}")
+            
+            if generate_response.status_code == 200:
+                print(f"✅ Generated contract document successfully")
+                return True
+            else:
+                print(f"❌ Failed to generate contract document: {generate_response.status_code}")
+                print(f"Response: {generate_response.text}")
+                return False
         else:
-            print(f"❌ POST /contracts/generate failed with status code {response.status_code}")
+            print(f"❌ POST /contracts failed with status code {response.status_code}")
             print(f"Response: {response.text}")
             return False
 
