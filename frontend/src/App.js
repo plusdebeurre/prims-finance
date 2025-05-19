@@ -67,7 +67,7 @@ const AuthProvider = ({ children }) => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setCurrentUser(null);
-    delete axios.defaults.headers.common["Authorization"];
+    setAuthToken(null);
   };
 
   const value = {
