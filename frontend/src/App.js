@@ -1157,7 +1157,7 @@ const GenerateContractForm = () => {
     setError(null);
     
     try {
-      await axios.post(`${API}/contracts`, formData);
+      await contractsAPI.create(formData);
       
       navigate("/contracts");
     } catch (error) {
