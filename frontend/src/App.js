@@ -1568,14 +1568,10 @@ const TemplatesList = () => {
     formData.append("template_file", e.target.template_file.files[0]);
     
     try {
-      await axios.post(`${API}/templates`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data"
-        }
-      });
+      await templatesAPI.upload(formData);
       
       // Refresh templates
-      const response = await axios.get(`${API}/templates`);
+      const response = await templatesAPI.getAll();
       setTemplates(response.data);
       
       // Reset form
