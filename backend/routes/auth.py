@@ -14,9 +14,9 @@ import os
 # Add the parent directory to the path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from utils import db
+from utils import db, create_access_token, get_password_hash, verify_password
 from models import User, UserCreate, UserRole, UserUpdate, UserPasswordUpdate
-from auth import create_access_token, get_password_hash, verify_password, get_current_user, get_current_active_user
+from auth import get_current_user, get_current_active_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
