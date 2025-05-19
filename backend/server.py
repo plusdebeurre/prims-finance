@@ -1067,9 +1067,6 @@ async def create_general_conditions(
     general_conditions: GeneralConditionsCreate,
     current_user: UserInDB = Depends(get_admin_user)
 ):
-    if general_conditions.company_id != current_user.company_id:
-        raise HTTPException(status_code=403, detail="Not authorized to create general conditions for this company")
-    
     # Deactivate all existing general conditions
     await db.general_conditions.update_many(
         {"company_id": current_user.company_id, "is_active": True},
@@ -1082,6 +1079,7 @@ async def create_general_conditions(
     general_conditions_dict["created_at"] = datetime.utcnow()
     general_conditions_dict["updated_at"] = datetime.utcnow()
     general_conditions_dict["is_active"] = True
+    general_conditions_dict["company_id"] = current_user.company_id
     
     await db.general_conditions.insert_one(general_conditions_dict)
     
