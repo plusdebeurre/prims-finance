@@ -38,12 +38,10 @@ class PrismFinanceAPITest:
             'password': 'admin123'
         }
         
-        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-        
+        # Use form data for token endpoint
         response = requests.post(
             f"{API_URL}/auth/token", 
-            data=login_data,
-            headers=headers
+            data=login_data
         )
         print(f"POST /auth/token status code: {response.status_code}")
         
