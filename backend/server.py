@@ -277,7 +277,7 @@ class GeneralConditionsBase(BaseModel):
     version: str
 
 class GeneralConditionsCreate(GeneralConditionsBase):
-    company_id: str
+    pass
 
 class GeneralConditionsUpdate(BaseModel):
     content: Optional[str] = None
