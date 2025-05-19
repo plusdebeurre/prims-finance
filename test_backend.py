@@ -31,6 +31,20 @@ def test_backend_api():
             # Set headers with token
             headers = {"Authorization": f"Bearer {token}"}
             
+            # Get user info to get company_id
+            try:
+                response = requests.get(f"{backend_url}/api/users/me", headers=headers)
+                if response.status_code == 200:
+                    user_info = response.json()
+                    company_id = user_info.get("company_id")
+                    print(f"✅ Got user info, company_id: {company_id}")
+                else:
+                    print(f"❌ User info endpoint failed: {response.status_code}")
+                    company_id = "default_company_id"  # Fallback
+            except Exception as e:
+                print(f"❌ User info endpoint error: {str(e)}")
+                company_id = "default_company_id"  # Fallback
+            
             # Test suppliers endpoint
             try:
                 response = requests.get(f"{backend_url}/api/suppliers/", headers=headers)
@@ -69,7 +83,8 @@ def test_backend_api():
                 supplier_data = {
                     "company_name": "ABC Corp",
                     "email": "supplier@example.com",
-                    "siret": "12345678901234"
+                    "siret": "12345678901234",
+                    "company_id": company_id
                 }
                 response = requests.post(f"{backend_url}/api/suppliers/", json=supplier_data, headers=headers)
                 if response.status_code == 200 or response.status_code == 201:
