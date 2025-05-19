@@ -20,6 +20,9 @@ import mammoth
 import jwt
 from passlib.context import CryptContext
 
+# Import our models
+from models import *
+
 # Set up root directory and load environment variables
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -49,153 +52,52 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
 
-# Create the main app without a prefix
-app = FastAPI(title="PRISM'FINANCE API", version="1.0.0")
+# Setup app and routers
+app = FastAPI(title="PRISM'FINANCE API", docs_url="/api/docs")
 
-# Create a router with the /api prefix
-api_router = APIRouter(prefix="/api")
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# Models
-class UserBase(BaseModel):
-    email: str
-    name: Optional[str] = None
-    is_admin: bool = False
-    supplier_id: Optional[str] = None
+# Create routers
+auth_router = APIRouter(prefix="/api/auth", tags=["Authentication"])
+users_router = APIRouter(prefix="/api/users", tags=["Users"])
+companies_router = APIRouter(prefix="/api/companies", tags=["Companies"])
+suppliers_router = APIRouter(prefix="/api/suppliers", tags=["Suppliers"])
+templates_router = APIRouter(prefix="/api/templates", tags=["Templates"])
+contracts_router = APIRouter(prefix="/api/contracts", tags=["Contracts"])
+documents_router = APIRouter(prefix="/api/documents", tags=["Documents"])
+purchase_orders_router = APIRouter(prefix="/api/purchase-orders", tags=["Purchase Orders"])
+notifications_router = APIRouter(prefix="/api/notifications", tags=["Notifications"])
+general_conditions_router = APIRouter(prefix="/api/general-conditions", tags=["General Conditions"])
 
-class UserCreate(UserBase):
-    password: str
-
-class User(UserBase):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-    user_id: str
-    is_admin: bool
-    name: Optional[str] = None
-
-class TokenData(BaseModel):
-    user_id: Optional[str] = None
-
-class SupplierBase(BaseModel):
-    name: str
-    siret: str
-    vat_number: str
-    profession: Optional[str] = None
-    address: Optional[str] = None
-    postal_code: Optional[str] = None
-    city: Optional[str] = None
-    insee_code: Optional[str] = None
-    country: Optional[str] = None
-    iban: str
-    bic: Optional[str] = None
-    vat_rates: List[float] = [20.0]
-    vat_exigibility: Optional[str] = None
-    payment_rule: Optional[str] = None
-    notes: Optional[str] = None
-    emails: List[str]
-    contract_variables: Optional[Dict[str, Any]] = {}
-
-class SupplierCreate(SupplierBase):
-    pass
-
-class Supplier(SupplierBase):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-
-class DocumentType(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    name: str
-    required_for: str  # 'individual', 'company', or 'both'
-    validity_period: int  # in days
-
-class DocumentTypeCreate(BaseModel):
-    name: str
-    required_for: str
-    validity_period: int
-
-class Document(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    supplier_id: str
-    document_type_id: str
-    file_path: str
-    upload_date: datetime = Field(default_factory=datetime.utcnow)
-    expiry_date: Optional[datetime] = None
-    status: str = "pending"  # 'pending', 'validated', 'expired'
-
-class ContractTemplate(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    name: str
-    file_path: str
-    variables: List[str] = []
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-
-class ContractTemplateCreate(BaseModel):
-    name: str
-
-class Contract(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    supplier_id: str
-    template_id: str
-    file_path: str
-    variables: Dict[str, Any] = {}
-    status: str = "draft"  # 'draft', 'sent', 'signed', 'expired'
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    signed_at: Optional[datetime] = None
-    content: Optional[str] = None  # Base64 encoded content
-
-class GeneralConditions(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    version: str
-    content: str
-    is_active: bool = True
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-
-class SupplierGCAcceptance(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    supplier_id: str
-    gc_id: str
-    accepted_at: datetime = Field(default_factory=datetime.utcnow)
-    ip_address: Optional[str] = None
-
-class Invoice(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    supplier_id: str
-    file_path: str
-    amount: float
-    due_date: datetime
-    upload_date: datetime = Field(default_factory=datetime.utcnow)
-    status: str = "pending"  # 'pending', 'paid', 'rejected'
-    payment_date: Optional[datetime] = None
-    notes: Optional[str] = None
-
-# Auth Functions
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+# Helper functions
+def verify_password(plain_password, password_hash):
+    return pwd_context.verify(plain_password, password_hash)
 
 def get_password_hash(password):
     return pwd_context.hash(password)
 
-async def get_user(email: str):
+async def get_user_by_email(email: str):
     user = await db.users.find_one({"email": email})
     if user:
-        return User(**user)
+        return UserInDB(**user)
     return None
 
 async def authenticate_user(email: str, password: str):
-    user = await get_user(email)
+    user = await get_user_by_email(email)
     if not user:
         return False
-    user_dict = await db.users.find_one({"email": email})
-    if not verify_password(password, user_dict["password"]):
+    if not verify_password(password, user.password_hash):
         return False
     return user
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -222,21 +124,45 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     user = await db.users.find_one({"id": token_data.user_id})
     if user is None:
         raise credentials_exception
-    return User(**user)
+    return UserInDB(**user)
 
-async def get_current_admin_user(current_user: User = Depends(get_current_user)):
-    if not current_user.is_admin:
-        raise HTTPException(status_code=403, detail="Not authorized")
+async def get_admin_user(current_user: UserInDB = Depends(get_current_user)):
+    if current_user.role not in ["admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
     return current_user
 
-# Function to extract variables from template content
-def extract_variables(content: str) -> List[str]:
-    pattern = r'\{\{([^}]+)\}\}'
-    matches = re.findall(pattern, content)
-    return list(set(matches))
+# Extract variables from template
+def extract_variables_from_docx(file_path):
+    with open(file_path, "rb") as docx_file:
+        result = mammoth.extract_raw_text(docx_file)
+        text = result.value
+        # Look for variables in {{variable_name}} format
+        variables = re.findall(r'{{([^}]+)}}', text)
+        return list(set(variables))  # Remove duplicates
 
-# Auth Endpoints
-@api_router.post("/auth/token", response_model=Token)
+# Replace variables in template
+async def replace_variables_in_docx(template_path, output_path, variable_values):
+    try:
+        with open(template_path, "rb") as docx_file:
+            result = mammoth.convert_to_html(docx_file)
+            html = result.value
+            
+        # Replace variables in HTML
+        for var_name, var_value in variable_values.items():
+            html = html.replace(f"{{{{{var_name}}}}}", var_value)
+            
+        # Convert HTML to DOCX (simplified)
+        # In a real implementation, you would use a library like python-docx or htmldocx
+        with open(output_path, "w") as output_file:
+            output_file.write(html)
+            
+        return True
+    except Exception as e:
+        logging.error(f"Error replacing variables: {str(e)}")
+        return False
+
+# Auth endpoints
+@auth_router.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     user = await authenticate_user(form_data.username, form_data.password)
     if not user:
@@ -253,516 +179,704 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
         "access_token": access_token,
         "token_type": "bearer",
         "user_id": user.id,
-        "is_admin": user.is_admin,
+        "is_admin": user.role in ["admin", "super_admin"],
         "name": user.name
     }
 
-@api_router.post("/users", response_model=User)
-async def create_user(user: UserCreate):
-    db_user = await get_user(user.email)
-    if db_user:
+@auth_router.post("/register", response_model=User)
+async def register_user(user: UserCreate):
+    # Check if email already exists
+    existing_user = await get_user_by_email(user.email)
+    if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
+    # Create new user
+    user_dict = user.dict()
+    user_dict.pop("password")
     hashed_password = get_password_hash(user.password)
-    user_data = user.dict()
-    user_data.pop("password")
-    user_obj = User(**user_data)
-    user_dict = user_obj.dict()
-    user_dict["password"] = hashed_password
     
-    await db.users.insert_one(user_dict)
-    return user_obj
+    new_user = UserInDB(
+        **user_dict,
+        id=str(uuid.uuid4()),
+        password_hash=hashed_password,
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow()
+    )
+    
+    await db.users.insert_one(new_user.dict())
+    
+    return User(
+        id=new_user.id,
+        email=new_user.email,
+        name=new_user.name,
+        role=new_user.role,
+        company_id=new_user.company_id,
+        created_at=new_user.created_at,
+        updated_at=new_user.updated_at,
+        is_active=new_user.is_active
+    )
 
-@api_router.get("/users/me", response_model=User)
-async def read_users_me(current_user: User = Depends(get_current_user)):
+@auth_router.post("/reset-password-request")
+async def request_password_reset(email: EmailStr = Body(..., embed=True)):
+    user = await get_user_by_email(email)
+    if not user:
+        # Don't reveal that the user doesn't exist
+        return {"message": "If your email is registered, you will receive a password reset link"}
+    
+    # In a real implementation, you would send an email with a reset token
+    # For this example, we'll just return a success message
+    return {"message": "If your email is registered, you will receive a password reset link"}
+
+@auth_router.post("/reset-password")
+async def reset_password(token: str = Body(...), new_password: str = Body(...)):
+    # Verify token and update password
+    # This is a simplified implementation
+    # In a real application, you would validate the token first
+    
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(status_code=400, detail="Invalid token")
+        
+        hashed_password = get_password_hash(new_password)
+        await db.users.update_one(
+            {"id": user_id},
+            {"$set": {"password_hash": hashed_password, "updated_at": datetime.utcnow()}}
+        )
+        
+        return {"message": "Password has been reset successfully"}
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=400, detail="Invalid token")
+
+# User endpoints
+@users_router.get("/me", response_model=User)
+async def get_current_user_info(current_user: UserInDB = Depends(get_current_user)):
     return current_user
 
-# Supplier Endpoints
-@api_router.post("/suppliers", response_model=Supplier)
-async def create_supplier(supplier: SupplierCreate, current_user: User = Depends(get_current_admin_user)):
-    supplier_dict = supplier.dict()
-    supplier_obj = Supplier(**supplier_dict)
-    
-    # Check if supplier with SIRET already exists
-    existing = await db.suppliers.find_one({"siret": supplier.siret})
-    if existing:
-        raise HTTPException(status_code=400, detail="Supplier with this SIRET already exists")
-    
-    await db.suppliers.insert_one(supplier_obj.dict())
-    return supplier_obj
-
-@api_router.get("/suppliers", response_model=List[Supplier])
-async def get_suppliers(current_user: User = Depends(get_current_user)):
-    if current_user.is_admin:
-        suppliers = await db.suppliers.find().to_list(1000)
-    else:
-        # If not admin, only return the supplier associated with this user
-        if not current_user.supplier_id:
-            return []
-        suppliers = await db.suppliers.find({"id": current_user.supplier_id}).to_list(1)
-    
-    return [Supplier(**supplier) for supplier in suppliers]
-
-@api_router.get("/suppliers/{supplier_id}", response_model=Supplier)
-async def get_supplier(supplier_id: str, current_user: User = Depends(get_current_user)):
-    # Check permissions - admin can view any supplier, non-admin only their own
-    if not current_user.is_admin and current_user.supplier_id != supplier_id:
-        raise HTTPException(status_code=403, detail="Not authorized to view this supplier")
-    
-    supplier = await db.suppliers.find_one({"id": supplier_id})
-    if not supplier:
-        raise HTTPException(status_code=404, detail="Supplier not found")
-    return Supplier(**supplier)
-
-@api_router.put("/suppliers/{supplier_id}", response_model=Supplier)
-async def update_supplier(supplier_id: str, supplier: SupplierCreate, current_user: User = Depends(get_current_user)):
-    # Check permissions - admin can update any supplier, non-admin only their own
-    if not current_user.is_admin and current_user.supplier_id != supplier_id:
-        raise HTTPException(status_code=403, detail="Not authorized to update this supplier")
-    
-    existing = await db.suppliers.find_one({"id": supplier_id})
-    if not existing:
-        raise HTTPException(status_code=404, detail="Supplier not found")
-    
-    supplier_dict = supplier.dict()
-    supplier_dict["updated_at"] = datetime.utcnow()
-    
-    await db.suppliers.update_one(
-        {"id": supplier_id},
-        {"$set": supplier_dict}
-    )
-    
-    updated = await db.suppliers.find_one({"id": supplier_id})
-    return Supplier(**updated)
-
-# Contract Template Endpoints
-@api_router.post("/contract-templates", response_model=ContractTemplate)
-async def create_contract_template(
-    name: str = Form(...),
-    file: UploadFile = File(...),
-    current_user: User = Depends(get_current_admin_user)
+@users_router.put("/me", response_model=User)
+async def update_current_user(
+    user_update: UserUpdate,
+    current_user: UserInDB = Depends(get_current_user)
 ):
-    # Create a unique filename
-    filename = f"{uuid.uuid4()}_{file.filename}"
-    file_path = TEMPLATES_DIR / filename
+    update_data = user_update.dict(exclude_unset=True)
+    if "password" in update_data:
+        update_data["password_hash"] = get_password_hash(update_data.pop("password"))
     
-    # Save the file
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    update_data["updated_at"] = datetime.utcnow()
     
-    # Extract variables using mammoth (convert docx to html)
-    try:
-        # Read file content
-        with open(file_path, "rb") as f:
-            content_bytes = f.read()
-        
-        # Convert docx to html
-        result = mammoth.convert_to_html(io.BytesIO(content_bytes))
-        html_content = result.value
-        
-        # Extract variables from HTML
-        variables = extract_variables(html_content)
-    except Exception as e:
-        logging.error(f"Error processing template: {str(e)}")
-        variables = []
-    
-    template = ContractTemplate(
-        name=name,
-        file_path=str(file_path),
-        variables=variables
-    )
-    
-    await db.contract_templates.insert_one(template.dict())
-    return template
-
-@api_router.get("/contract-templates", response_model=List[ContractTemplate])
-async def get_contract_templates(current_user: User = Depends(get_current_user)):
-    templates = await db.contract_templates.find().to_list(1000)
-    return [ContractTemplate(**template) for template in templates]
-
-@api_router.get("/contract-templates/{template_id}", response_model=ContractTemplate)
-async def get_contract_template(template_id: str, current_user: User = Depends(get_current_user)):
-    template = await db.contract_templates.find_one({"id": template_id})
-    if not template:
-        raise HTTPException(status_code=404, detail="Contract template not found")
-    return ContractTemplate(**template)
-
-@api_router.get("/contract-templates/{template_id}/download")
-async def download_contract_template(template_id: str, current_user: User = Depends(get_current_user)):
-    template = await db.contract_templates.find_one({"id": template_id})
-    if not template:
-        raise HTTPException(status_code=404, detail="Contract template not found")
-    
-    file_path = Path(template["file_path"])
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="Template file not found")
-    
-    return FileResponse(
-        path=file_path, 
-        filename=file_path.name, 
-        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    )
-
-# Contract Generation Endpoint
-@api_router.post("/contracts/generate", response_model=Contract)
-async def generate_contract(
-    supplier_id: str = Form(...),
-    template_id: str = Form(...),
-    variables: str = Form(...),
-    current_user: User = Depends(get_current_user)
-):
-    # Check permissions - admin can generate for any supplier, non-admin only for their own
-    if not current_user.is_admin and current_user.supplier_id != supplier_id:
-        raise HTTPException(status_code=403, detail="Not authorized to generate contracts for this supplier")
-    
-    # Validate supplier and template exist
-    supplier = await db.suppliers.find_one({"id": supplier_id})
-    template = await db.contract_templates.find_one({"id": template_id})
-    
-    if not supplier:
-        raise HTTPException(status_code=404, detail="Supplier not found")
-    if not template:
-        raise HTTPException(status_code=404, detail="Contract template not found")
-    
-    # Parse variables
-    try:
-        variables_dict = json.loads(variables)
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Invalid variables format")
-    
-    # Read template content
-    try:
-        with open(template["file_path"], "rb") as f:
-            template_content = f.read()
-        
-        # Convert to HTML
-        result = mammoth.convert_to_html(io.BytesIO(template_content))
-        html_content = result.value
-        
-        # Replace variables in HTML
-        for var_name, var_value in variables_dict.items():
-            html_content = html_content.replace(f"{{{{{var_name}}}}}", str(var_value))
-        
-        # Store as base64 for display in frontend
-        content_b64 = base64.b64encode(html_content.encode()).decode()
-        
-        # Create contract file
-        contract_filename = f"contract_{supplier_id}_{template_id}_{uuid.uuid4()}.html"
-        contract_path = str(CONTRACTS_DIR / contract_filename)
-        
-        with open(CONTRACTS_DIR / contract_filename, "w") as f:
-            f.write(html_content)
-        
-        contract = Contract(
-            supplier_id=supplier_id,
-            template_id=template_id,
-            file_path=contract_path,
-            variables=variables_dict,
-            content=content_b64
-        )
-        
-        await db.contracts.insert_one(contract.dict())
-        return contract
-    
-    except Exception as e:
-        logging.error(f"Error generating contract: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error generating contract: {str(e)}")
-
-@api_router.get("/contracts", response_model=List[Contract])
-async def get_contracts(supplier_id: Optional[str] = None, current_user: User = Depends(get_current_user)):
-    query = {}
-    
-    # Enforce permissions:
-    # - Admin can view all contracts or filter by supplier
-    # - Non-admin can only view their own supplier's contracts
-    if not current_user.is_admin:
-        if not current_user.supplier_id:
-            return []
-        query["supplier_id"] = current_user.supplier_id
-    elif supplier_id:
-        query["supplier_id"] = supplier_id
-    
-    contracts = await db.contracts.find(query).to_list(1000)
-    return [Contract(**contract) for contract in contracts]
-
-@api_router.get("/contracts/{contract_id}", response_model=Contract)
-async def get_contract(contract_id: str, current_user: User = Depends(get_current_user)):
-    contract = await db.contracts.find_one({"id": contract_id})
-    if not contract:
-        raise HTTPException(status_code=404, detail="Contract not found")
-    
-    # Check permissions - admin can view any contract, non-admin only their supplier's
-    if not current_user.is_admin and current_user.supplier_id != contract["supplier_id"]:
-        raise HTTPException(status_code=403, detail="Not authorized to view this contract")
-    
-    return Contract(**contract)
-
-@api_router.post("/contracts/{contract_id}/sign", response_model=Contract)
-async def sign_contract(contract_id: str, current_user: User = Depends(get_current_user)):
-    contract = await db.contracts.find_one({"id": contract_id})
-    if not contract:
-        raise HTTPException(status_code=404, detail="Contract not found")
-    
-    # Check permissions - admin can sign any contract, non-admin only their supplier's
-    if not current_user.is_admin and current_user.supplier_id != contract["supplier_id"]:
-        raise HTTPException(status_code=403, detail="Not authorized to sign this contract")
-    
-    # Update contract
-    now = datetime.utcnow()
-    await db.contracts.update_one(
-        {"id": contract_id},
-        {"$set": {"status": "signed", "signed_at": now}}
-    )
-    
-    updated = await db.contracts.find_one({"id": contract_id})
-    return Contract(**updated)
-
-# General Conditions Endpoints
-@api_router.post("/general-conditions", response_model=GeneralConditions)
-async def create_general_conditions(gc: GeneralConditions, current_user: User = Depends(get_current_admin_user)):
-    if gc.is_active:
-        # Deactivate all other general conditions if this one is active
-        await db.general_conditions.update_many(
-            {"is_active": True},
-            {"$set": {"is_active": False}}
-        )
-    
-    await db.general_conditions.insert_one(gc.dict())
-    return gc
-
-@api_router.get("/general-conditions/active", response_model=GeneralConditions)
-async def get_active_general_conditions(current_user: User = Depends(get_current_user)):
-    gc = await db.general_conditions.find_one({"is_active": True})
-    if not gc:
-        raise HTTPException(status_code=404, detail="No active general conditions found")
-    return GeneralConditions(**gc)
-
-@api_router.post("/suppliers/{supplier_id}/accept-gc", response_model=SupplierGCAcceptance)
-async def accept_general_conditions(
-    supplier_id: str,
-    gc_id: str = Body(...),
-    ip_address: Optional[str] = Body(None),
-    current_user: User = Depends(get_current_user)
-):
-    # Check permissions - admin or supplier's own user can accept
-    if not current_user.is_admin and current_user.supplier_id != supplier_id:
-        raise HTTPException(status_code=403, detail="Not authorized to accept for this supplier")
-    
-    # Validate supplier and GC exist
-    supplier = await db.suppliers.find_one({"id": supplier_id})
-    gc = await db.general_conditions.find_one({"id": gc_id})
-    
-    if not supplier:
-        raise HTTPException(status_code=404, detail="Supplier not found")
-    if not gc:
-        raise HTTPException(status_code=404, detail="General conditions not found")
-    
-    acceptance = SupplierGCAcceptance(
-        supplier_id=supplier_id,
-        gc_id=gc_id,
-        ip_address=ip_address
-    )
-    
-    await db.gc_acceptances.insert_one(acceptance.dict())
-    return acceptance
-
-@api_router.get("/suppliers/{supplier_id}/gc-status", response_model=bool)
-async def check_gc_acceptance(supplier_id: str, current_user: User = Depends(get_current_user)):
-    # Check permissions - admin or supplier's own user can check
-    if not current_user.is_admin and current_user.supplier_id != supplier_id:
-        raise HTTPException(status_code=403, detail="Not authorized to check for this supplier")
-    
-    # Get most recent active GC
-    gc = await db.general_conditions.find_one({"is_active": True})
-    if not gc:
-        return False
-    
-    # Check if supplier has accepted this GC
-    acceptance = await db.gc_acceptances.find_one({
-        "supplier_id": supplier_id,
-        "gc_id": gc["id"]
-    })
-    
-    return acceptance is not None
-
-# Invoice Endpoints
-@api_router.post("/invoices", response_model=Invoice)
-async def create_invoice(
-    supplier_id: str = Form(...),
-    amount: float = Form(...),
-    due_date: str = Form(...),
-    notes: Optional[str] = Form(None),
-    file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user)
-):
-    # Check permissions - admin or supplier's own user can upload invoices
-    if not current_user.is_admin and current_user.supplier_id != supplier_id:
-        raise HTTPException(status_code=403, detail="Not authorized to upload invoices for this supplier")
-    
-    # Check if supplier exists
-    supplier = await db.suppliers.find_one({"id": supplier_id})
-    if not supplier:
-        raise HTTPException(status_code=404, detail="Supplier not found")
-    
-    # Check if supplier has accepted general conditions
-    gc = await db.general_conditions.find_one({"is_active": True})
-    if gc:
-        acceptance = await db.gc_acceptances.find_one({
-            "supplier_id": supplier_id,
-            "gc_id": gc["id"]
-        })
-        if not acceptance and not current_user.is_admin:
-            raise HTTPException(
-                status_code=400, 
-                detail="Supplier must accept the general conditions before uploading invoices"
-            )
-    
-    # Save the file
-    filename = f"invoice_{supplier_id}_{uuid.uuid4()}_{file.filename}"
-    file_path = UPLOAD_DIR / "invoices"
-    file_path.mkdir(exist_ok=True)
-    
-    file_path = file_path / filename
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    
-    try:
-        due_date_obj = datetime.fromisoformat(due_date)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid due date format. Use ISO format (YYYY-MM-DD)")
-    
-    invoice = Invoice(
-        supplier_id=supplier_id,
-        file_path=str(file_path),
-        amount=amount,
-        due_date=due_date_obj,
-        notes=notes
-    )
-    
-    await db.invoices.insert_one(invoice.dict())
-    return invoice
-
-@api_router.get("/invoices", response_model=List[Invoice])
-async def get_invoices(supplier_id: Optional[str] = None, current_user: User = Depends(get_current_user)):
-    query = {}
-    
-    # Enforce permissions:
-    # - Admin can view all invoices or filter by supplier
-    # - Non-admin can only view their own supplier's invoices
-    if not current_user.is_admin:
-        if not current_user.supplier_id:
-            return []
-        query["supplier_id"] = current_user.supplier_id
-    elif supplier_id:
-        query["supplier_id"] = supplier_id
-    
-    invoices = await db.invoices.find(query).to_list(1000)
-    return [Invoice(**invoice) for invoice in invoices]
-
-@api_router.get("/invoices/{invoice_id}", response_model=Invoice)
-async def get_invoice(invoice_id: str, current_user: User = Depends(get_current_user)):
-    invoice = await db.invoices.find_one({"id": invoice_id})
-    if not invoice:
-        raise HTTPException(status_code=404, detail="Invoice not found")
-    
-    # Check permissions - admin can view any invoice, non-admin only their supplier's
-    if not current_user.is_admin and current_user.supplier_id != invoice["supplier_id"]:
-        raise HTTPException(status_code=403, detail="Not authorized to view this invoice")
-    
-    return Invoice(**invoice)
-
-@api_router.put("/invoices/{invoice_id}/status", response_model=Invoice)
-async def update_invoice_status(
-    invoice_id: str, 
-    status: str = Body(...),
-    payment_date: Optional[str] = Body(None),
-    current_user: User = Depends(get_current_admin_user)
-):
-    invoice = await db.invoices.find_one({"id": invoice_id})
-    if not invoice:
-        raise HTTPException(status_code=404, detail="Invoice not found")
-    
-    if status not in ["pending", "paid", "rejected"]:
-        raise HTTPException(status_code=400, detail="Invalid status. Use 'pending', 'paid', or 'rejected'")
-    
-    update_data = {"status": status}
-    
-    if status == "paid" and payment_date:
-        try:
-            payment_date_obj = datetime.fromisoformat(payment_date)
-            update_data["payment_date"] = payment_date_obj
-        except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid payment date format. Use ISO format (YYYY-MM-DD)")
-    
-    await db.invoices.update_one(
-        {"id": invoice_id},
+    await db.users.update_one(
+        {"id": current_user.id},
         {"$set": update_data}
     )
     
-    updated = await db.invoices.find_one({"id": invoice_id})
-    return Invoice(**updated)
+    updated_user = await db.users.find_one({"id": current_user.id})
+    return UserInDB(**updated_user)
 
-@api_router.delete("/invoices/{invoice_id}")
-async def delete_invoice(invoice_id: str, current_user: User = Depends(get_current_user)):
-    invoice = await db.invoices.find_one({"id": invoice_id})
-    if not invoice:
-        raise HTTPException(status_code=404, detail="Invoice not found")
+@users_router.get("/", response_model=List[User])
+async def get_users(
+    skip: int = 0,
+    limit: int = 100,
+    current_user: UserInDB = Depends(get_admin_user)
+):
+    users = await db.users.find(
+        {"company_id": current_user.company_id}
+    ).skip(skip).limit(limit).to_list(limit)
+    return users
+
+@users_router.post("/", response_model=User)
+async def create_user(
+    user: UserCreate,
+    current_user: UserInDB = Depends(get_admin_user)
+):
+    # Check if email already exists
+    existing_user = await get_user_by_email(user.email)
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
     
-    # Check permissions - admin can delete any invoice, non-admin only their supplier's if status is pending
-    if not current_user.is_admin:
-        if current_user.supplier_id != invoice["supplier_id"]:
-            raise HTTPException(status_code=403, detail="Not authorized to delete this invoice")
-        if invoice["status"] != "pending":
-            raise HTTPException(status_code=400, detail="Cannot delete invoices that are not in 'pending' status")
+    # Create new user
+    user_dict = user.dict()
+    user_dict.pop("password")
+    hashed_password = get_password_hash(user.password)
     
-    # Delete the file if it exists
-    file_path = Path(invoice["file_path"])
-    if file_path.exists():
-        file_path.unlink()
+    new_user = UserInDB(
+        **user_dict,
+        id=str(uuid.uuid4()),
+        password_hash=hashed_password,
+        company_id=current_user.company_id,
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow()
+    )
     
-    # Delete the database record
-    await db.invoices.delete_one({"id": invoice_id})
+    await db.users.insert_one(new_user.dict())
     
-    return {"message": "Invoice deleted successfully"}
+    # Return user without password
+    return User(
+        id=new_user.id,
+        email=new_user.email,
+        name=new_user.name,
+        role=new_user.role,
+        company_id=new_user.company_id,
+        created_at=new_user.created_at,
+        updated_at=new_user.updated_at,
+        is_active=new_user.is_active
+    )
 
-# Include the router in the main app
-app.include_router(api_router)
+# Supplier endpoints
+@suppliers_router.post("/", response_model=Supplier)
+async def create_supplier(
+    supplier: SupplierCreate,
+    current_user: UserInDB = Depends(get_admin_user)
+):
+    if supplier.company_id != current_user.company_id:
+        raise HTTPException(status_code=403, detail="Not authorized to create supplier for this company")
+    
+    supplier_dict = supplier.dict()
+    supplier_dict["id"] = str(uuid.uuid4())
+    supplier_dict["created_at"] = datetime.utcnow()
+    supplier_dict["updated_at"] = datetime.utcnow()
+    
+    await db.suppliers.insert_one(supplier_dict)
+    
+    return Supplier(**supplier_dict)
 
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+@suppliers_router.get("/", response_model=List[Supplier])
+async def get_suppliers(
+    skip: int = 0,
+    limit: int = 100,
+    current_user: UserInDB = Depends(get_current_user)
+):
+    query = {"company_id": current_user.company_id}
+    suppliers = await db.suppliers.find(query).skip(skip).limit(limit).to_list(limit)
+    return suppliers
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+@suppliers_router.get("/{supplier_id}", response_model=Supplier)
+async def get_supplier(
+    supplier_id: str,
+    current_user: UserInDB = Depends(get_current_user)
+):
+    query = {"id": supplier_id, "company_id": current_user.company_id}
+    supplier = await db.suppliers.find_one(query)
+    
+    if not supplier:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+    
+    return Supplier(**supplier)
 
+@suppliers_router.put("/{supplier_id}", response_model=Supplier)
+async def update_supplier(
+    supplier_id: str,
+    supplier_update: SupplierUpdate,
+    current_user: UserInDB = Depends(get_admin_user)
+):
+    # Check if supplier exists
+    supplier = await db.suppliers.find_one({"id": supplier_id, "company_id": current_user.company_id})
+    if not supplier:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+    
+    # Update supplier
+    update_data = supplier_update.dict(exclude_unset=True)
+    update_data["updated_at"] = datetime.utcnow()
+    
+    await db.suppliers.update_one(
+        {"id": supplier_id},
+        {"$set": update_data}
+    )
+    
+    updated_supplier = await db.suppliers.find_one({"id": supplier_id})
+    return Supplier(**updated_supplier)
+
+@suppliers_router.post("/{supplier_id}/documents", response_model=Supplier)
+async def upload_supplier_document(
+    supplier_id: str,
+    document_name: str = Form(...),
+    document_category: str = Form(...),
+    document: UploadFile = File(...),
+    current_user: UserInDB = Depends(get_admin_user)
+):
+    # Check if supplier exists
+    supplier = await db.suppliers.find_one({"id": supplier_id, "company_id": current_user.company_id})
+    if not supplier:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+    
+    # Save document
+    file_extension = os.path.splitext(document.filename)[1]
+    file_name = f"{uuid.uuid4()}{file_extension}"
+    file_path = DOCUMENTS_DIR / file_name
+    
+    with open(file_path, "wb") as f:
+        f.write(await document.read())
+    
+    # Add document to supplier
+    document_data = {
+        "id": str(uuid.uuid4()),
+        "name": document_name,
+        "category": document_category,
+        "file_path": str(file_path),
+        "uploaded_at": datetime.utcnow(),
+        "uploaded_by": current_user.id,
+        "status": "pending"
+    }
+    
+    await db.suppliers.update_one(
+        {"id": supplier_id},
+        {"$push": {"documents": document_data}}
+    )
+    
+    updated_supplier = await db.suppliers.find_one({"id": supplier_id})
+    return Supplier(**updated_supplier)
+
+# Template endpoints
+@templates_router.post("/", response_model=Template)
+async def create_template(
+    name: str = Form(...),
+    description: str = Form(None),
+    template_type: str = Form(...),
+    template_file: UploadFile = File(...),
+    current_user: UserInDB = Depends(get_admin_user)
+):
+    # Save template file
+    file_extension = os.path.splitext(template_file.filename)[1]
+    file_name = f"{uuid.uuid4()}{file_extension}"
+    file_path = TEMPLATES_DIR / file_name
+    
+    with open(file_path, "wb") as f:
+        f.write(await template_file.read())
+    
+    # Extract variables from template if it's a DOCX file
+    variables = []
+    if file_extension.lower() == ".docx":
+        variables = extract_variables_from_docx(file_path)
+    
+    # Create template
+    template_dict = {
+        "id": str(uuid.uuid4()),
+        "name": name,
+        "description": description,
+        "file_path": str(file_path),
+        "variables": variables,
+        "type": template_type,
+        "company_id": current_user.company_id,
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow(),
+        "is_active": True
+    }
+    
+    await db.templates.insert_one(template_dict)
+    
+    return Template(**template_dict)
+
+@templates_router.get("/", response_model=List[Template])
+async def get_templates(
+    skip: int = 0,
+    limit: int = 100,
+    current_user: UserInDB = Depends(get_current_user)
+):
+    query = {"company_id": current_user.company_id, "is_active": True}
+    templates = await db.templates.find(query).skip(skip).limit(limit).to_list(limit)
+    return templates
+
+@templates_router.get("/{template_id}", response_model=Template)
+async def get_template(
+    template_id: str,
+    current_user: UserInDB = Depends(get_current_user)
+):
+    query = {"id": template_id, "company_id": current_user.company_id}
+    template = await db.templates.find_one(query)
+    
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    return Template(**template)
+
+@templates_router.delete("/{template_id}")
+async def delete_template(
+    template_id: str,
+    current_user: UserInDB = Depends(get_admin_user)
+):
+    query = {"id": template_id, "company_id": current_user.company_id}
+    template = await db.templates.find_one(query)
+    
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    # Soft delete - mark as inactive
+    await db.templates.update_one(
+        {"id": template_id},
+        {"$set": {"is_active": False, "updated_at": datetime.utcnow()}}
+    )
+    
+    return {"message": "Template deleted successfully"}
+
+# Contract endpoints
+@contracts_router.post("/", response_model=Contract)
+async def create_contract(
+    contract: ContractCreate,
+    current_user: UserInDB = Depends(get_admin_user)
+):
+    if contract.company_id != current_user.company_id:
+        raise HTTPException(status_code=403, detail="Not authorized to create contract for this company")
+    
+    # Check if supplier exists
+    supplier = await db.suppliers.find_one({"id": contract.supplier_id, "company_id": current_user.company_id})
+    if not supplier:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+    
+    # Check if template exists
+    template = await db.templates.find_one({"id": contract.template_id, "company_id": current_user.company_id})
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    contract_dict = contract.dict()
+    contract_dict["id"] = str(uuid.uuid4())
+    contract_dict["created_at"] = datetime.utcnow()
+    contract_dict["updated_at"] = datetime.utcnow()
+    
+    await db.contracts.insert_one(contract_dict)
+    
+    return Contract(**contract_dict)
+
+@contracts_router.get("/", response_model=List[Contract])
+async def get_contracts(
+    skip: int = 0,
+    limit: int = 100,
+    current_user: UserInDB = Depends(get_current_user)
+):
+    query = {"company_id": current_user.company_id}
+    
+    # If user is not admin, only show contracts for their supplier account
+    if current_user.role == "supplier":
+        supplier = await db.suppliers.find_one({"user_id": current_user.id})
+        if supplier:
+            query["supplier_id"] = supplier["id"]
+        else:
+            return []
+    
+    contracts = await db.contracts.find(query).skip(skip).limit(limit).to_list(limit)
+    return contracts
+
+@contracts_router.get("/{contract_id}", response_model=Contract)
+async def get_contract(
+    contract_id: str,
+    current_user: UserInDB = Depends(get_current_user)
+):
+    query = {"id": contract_id, "company_id": current_user.company_id}
+    
+    # If user is not admin, check if contract belongs to their supplier account
+    if current_user.role == "supplier":
+        supplier = await db.suppliers.find_one({"user_id": current_user.id})
+        if supplier:
+            query["supplier_id"] = supplier["id"]
+        else:
+            raise HTTPException(status_code=404, detail="Contract not found")
+    
+    contract = await db.contracts.find_one(query)
+    
+    if not contract:
+        raise HTTPException(status_code=404, detail="Contract not found")
+    
+    return Contract(**contract)
+
+@contracts_router.put("/{contract_id}", response_model=Contract)
+async def update_contract(
+    contract_id: str,
+    contract_update: ContractUpdate,
+    current_user: UserInDB = Depends(get_admin_user)
+):
+    # Check if contract exists
+    contract = await db.contracts.find_one({"id": contract_id, "company_id": current_user.company_id})
+    if not contract:
+        raise HTTPException(status_code=404, detail="Contract not found")
+    
+    # Update contract
+    update_data = contract_update.dict(exclude_unset=True)
+    update_data["updated_at"] = datetime.utcnow()
+    
+    await db.contracts.update_one(
+        {"id": contract_id},
+        {"$set": update_data}
+    )
+    
+    updated_contract = await db.contracts.find_one({"id": contract_id})
+    return Contract(**updated_contract)
+
+@contracts_router.post("/{contract_id}/generate", response_model=Contract)
+async def generate_contract(
+    contract_id: str,
+    current_user: UserInDB = Depends(get_admin_user)
+):
+    # Check if contract exists
+    contract = await db.contracts.find_one({"id": contract_id, "company_id": current_user.company_id})
+    if not contract:
+        raise HTTPException(status_code=404, detail="Contract not found")
+    
+    # Check if template exists
+    template = await db.templates.find_one({"id": contract["template_id"]})
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    # Generate contract file
+    output_file_name = f"{contract_id}.docx"
+    output_file_path = CONTRACTS_DIR / output_file_name
+    
+    success = await replace_variables_in_docx(
+        template["file_path"],
+        output_file_path,
+        contract["variable_values"]
+    )
+    
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to generate contract")
+    
+    # Update contract with file path
+    await db.contracts.update_one(
+        {"id": contract_id},
+        {"$set": {
+            "file_path": str(output_file_path),
+            "status": "pending_signature",
+            "updated_at": datetime.utcnow()
+        }}
+    )
+    
+    updated_contract = await db.contracts.find_one({"id": contract_id})
+    return Contract(**updated_contract)
+
+@contracts_router.post("/{contract_id}/sign", response_model=Contract)
+async def sign_contract(
+    contract_id: str,
+    current_user: UserInDB = Depends(get_current_user)
+):
+    # Check if contract exists
+    query = {"id": contract_id}
+    
+    # If user is not admin, check if contract belongs to their supplier account
+    if current_user.role == "supplier":
+        supplier = await db.suppliers.find_one({"user_id": current_user.id})
+        if supplier:
+            query["supplier_id"] = supplier["id"]
+        else:
+            raise HTTPException(status_code=404, detail="Contract not found")
+    
+    contract = await db.contracts.find_one(query)
+    
+    if not contract:
+        raise HTTPException(status_code=404, detail="Contract not found")
+    
+    if contract["status"] != "pending_signature":
+        raise HTTPException(status_code=400, detail="Contract is not in pending signature status")
+    
+    # Update contract with signature
+    await db.contracts.update_one(
+        {"id": contract_id},
+        {"$set": {
+            "status": "signed",
+            "signed_at": datetime.utcnow(),
+            "signed_by": current_user.id,
+            "updated_at": datetime.utcnow()
+        }}
+    )
+    
+    updated_contract = await db.contracts.find_one({"id": contract_id})
+    
+    # Create notification for the other party
+    notify_user_id = None
+    notification_title = ""
+    notification_message = ""
+    
+    if current_user.role == "supplier":
+        # Notify company admin
+        admins = await db.users.find({"company_id": contract["company_id"], "role": "admin"}).to_list(1)
+        if admins:
+            notify_user_id = admins[0]["id"]
+            notification_title = "Contract Signed"
+            notification_message = f"A contract has been signed by supplier {current_user.name}"
+    else:
+        # Notify supplier
+        supplier = await db.suppliers.find_one({"id": contract["supplier_id"]})
+        if supplier and supplier.get("user_id"):
+            notify_user_id = supplier["user_id"]
+            notification_title = "Contract Signed"
+            notification_message = f"A contract has been signed by {current_user.name}"
+    
+    if notify_user_id:
+        notification = {
+            "id": str(uuid.uuid4()),
+            "user_id": notify_user_id,
+            "title": notification_title,
+            "message": notification_message,
+            "type": "info",
+            "related_id": contract_id,
+            "related_type": "contract",
+            "company_id": contract["company_id"],
+            "created_at": datetime.utcnow(),
+            "read": False
+        }
+        
+        await db.notifications.insert_one(notification)
+    
+    return Contract(**updated_contract)
+
+@contracts_router.get("/{contract_id}/download")
+async def download_contract(
+    contract_id: str,
+    current_user: UserInDB = Depends(get_current_user)
+):
+    # Check if contract exists
+    query = {"id": contract_id, "company_id": current_user.company_id}
+    
+    # If user is not admin, check if contract belongs to their supplier account
+    if current_user.role == "supplier":
+        supplier = await db.suppliers.find_one({"user_id": current_user.id})
+        if supplier:
+            query["supplier_id"] = supplier["id"]
+        else:
+            raise HTTPException(status_code=404, detail="Contract not found")
+    
+    contract = await db.contracts.find_one(query)
+    
+    if not contract:
+        raise HTTPException(status_code=404, detail="Contract not found")
+    
+    if not contract.get("file_path"):
+        raise HTTPException(status_code=400, detail="Contract file not generated yet")
+    
+    return FileResponse(
+        path=contract["file_path"],
+        filename=f"contract_{contract_id}.docx",
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
+
+# Notification endpoints
+@notifications_router.get("/", response_model=List[Notification])
+async def get_notifications(
+    skip: int = 0,
+    limit: int = 100,
+    unread_only: bool = False,
+    current_user: UserInDB = Depends(get_current_user)
+):
+    query = {"user_id": current_user.id}
+    
+    if unread_only:
+        query["read"] = False
+    
+    notifications = await db.notifications.find(query).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    return notifications
+
+@notifications_router.put("/{notification_id}", response_model=Notification)
+async def mark_notification_as_read(
+    notification_id: str,
+    current_user: UserInDB = Depends(get_current_user)
+):
+    # Check if notification exists
+    notification = await db.notifications.find_one({"id": notification_id, "user_id": current_user.id})
+    if not notification:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    
+    # Mark as read
+    await db.notifications.update_one(
+        {"id": notification_id},
+        {"$set": {"read": True}}
+    )
+    
+    updated_notification = await db.notifications.find_one({"id": notification_id})
+    return Notification(**updated_notification)
+
+@notifications_router.put("/mark-all-read")
+async def mark_all_notifications_as_read(
+    current_user: UserInDB = Depends(get_current_user)
+):
+    # Mark all notifications as read
+    await db.notifications.update_many(
+        {"user_id": current_user.id, "read": False},
+        {"$set": {"read": True}}
+    )
+    
+    return {"message": "All notifications marked as read"}
+
+# General Conditions endpoints
+@general_conditions_router.post("/", response_model=GeneralConditions)
+async def create_general_conditions(
+    general_conditions: GeneralConditionsCreate,
+    current_user: UserInDB = Depends(get_admin_user)
+):
+    if general_conditions.company_id != current_user.company_id:
+        raise HTTPException(status_code=403, detail="Not authorized to create general conditions for this company")
+    
+    # Deactivate all existing general conditions
+    await db.general_conditions.update_many(
+        {"company_id": current_user.company_id, "is_active": True},
+        {"$set": {"is_active": False}}
+    )
+    
+    # Create new general conditions
+    general_conditions_dict = general_conditions.dict()
+    general_conditions_dict["id"] = str(uuid.uuid4())
+    general_conditions_dict["created_at"] = datetime.utcnow()
+    general_conditions_dict["updated_at"] = datetime.utcnow()
+    general_conditions_dict["is_active"] = True
+    
+    await db.general_conditions.insert_one(general_conditions_dict)
+    
+    return GeneralConditions(**general_conditions_dict)
+
+@general_conditions_router.get("/active", response_model=GeneralConditions)
+async def get_active_general_conditions(
+    current_user: UserInDB = Depends(get_current_user)
+):
+    query = {"company_id": current_user.company_id, "is_active": True}
+    general_conditions = await db.general_conditions.find_one(query)
+    
+    if not general_conditions:
+        raise HTTPException(status_code=404, detail="No active general conditions found")
+    
+    return GeneralConditions(**general_conditions)
+
+# Health check endpoint
+@app.get("/api/health")
+async def health_check():
+    return {"status": "ok", "version": "1.0.0"}
+
+# Include all routers
+app.include_router(auth_router)
+app.include_router(users_router)
+app.include_router(companies_router)
+app.include_router(suppliers_router)
+app.include_router(templates_router)
+app.include_router(contracts_router)
+app.include_router(documents_router)
+app.include_router(purchase_orders_router)
+app.include_router(notifications_router)
+app.include_router(general_conditions_router)
+
+# Database initialization
 @app.on_event("startup")
 async def startup_db_client():
-    # Create a default admin user if none exists
-    admin_count = await db.users.count_documents({"is_admin": True})
-    if admin_count == 0:
-        admin_user = {
+    # Create indexes
+    await db.users.create_index("email", unique=True)
+    await db.users.create_index("id", unique=True)
+    await db.suppliers.create_index("id", unique=True)
+    await db.templates.create_index("id", unique=True)
+    await db.contracts.create_index("id", unique=True)
+    await db.notifications.create_index("id", unique=True)
+    await db.general_conditions.create_index("id", unique=True)
+    
+    # Create default admin user if no users exist
+    user_count = await db.users.count_documents({})
+    if user_count == 0:
+        default_admin = {
             "id": str(uuid.uuid4()),
             "email": "admin@prismfinance.com",
-            "password": get_password_hash("admin123"),
-            "name": "Admin User",
-            "is_admin": True,
-            "created_at": datetime.utcnow()
+            "name": "Admin",
+            "role": "super_admin",
+            "password_hash": get_password_hash("admin123"),
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+            "is_active": True
         }
-        await db.users.insert_one(admin_user)
-        logger.info("Created default admin user")
-    
-    # Make sure UPLOAD_DIR and all subdirectories exist
-    (UPLOAD_DIR / "invoices").mkdir(exist_ok=True, parents=True)
+        await db.users.insert_one(default_admin)
+        print("INFO - Created default admin user")
 
+# Database shutdown
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
