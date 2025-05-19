@@ -2,6 +2,8 @@
 import requests
 import sys
 import time
+import uuid
+from datetime import datetime
 
 class PrismFinanceAPITester:
     def __init__(self, base_url):
@@ -11,6 +13,9 @@ class PrismFinanceAPITester:
         self.tests_passed = 0
         self.user_id = None
         self.company_id = None
+        self.supplier_id = None
+        self.supplier_email = None
+        self.supplier_password = None
 
     def run_test(self, name, method, endpoint, expected_status, data=None, params=None):
         """Run a single API test"""
@@ -76,6 +81,7 @@ class PrismFinanceAPITester:
                 self.token = data.get('access_token')
                 self.user_id = data.get('user_id')
                 self.company_id = data.get('company_id')
+                self.supplier_id = data.get('supplier_id')
                 print(f"✅ Login successful - User ID: {self.user_id}, Role: {data.get('role')}")
                 return True
             else:
@@ -90,6 +96,56 @@ class PrismFinanceAPITester:
         except Exception as e:
             print(f"❌ Login failed - Error: {str(e)}")
             return False
+            
+    def test_register_supplier(self, email=None, password="Password123!"):
+        """Test supplier registration"""
+        if not email:
+            # Generate a unique email for testing
+            timestamp = int(time.time())
+            email = f"test_supplier_{timestamp}@example.com"
+        
+        self.supplier_email = email
+        self.supplier_password = password
+        
+        # Create registration data
+        registration_data = {
+            "email": email,
+            "password": password,
+            "name": "Test Supplier",
+            "role": "supplier",
+            "company_data": {
+                "name": "Test Company",
+                "company_type": "SAS",
+                "address": "123 Test Street",
+                "postal_code": "75001",
+                "city": "Paris",
+                "country": "France",
+                "registration_number": "123 456 789 00012",
+                "registration_city": "Paris",
+                "representative_name": "John Doe",
+                "representative_role": "CEO",
+                "phone": "+33 1 23 45 67 89"
+            }
+        }
+        
+        # Try to get active general conditions first
+        try:
+            response = requests.get(f"{self.base_url}/api/general-conditions/active")
+            if response.status_code == 200:
+                gc_data = response.json()
+                if gc_data and 'id' in gc_data:
+                    registration_data["accepted_conditions_id"] = gc_data["id"]
+        except Exception as e:
+            print(f"Warning: Could not fetch general conditions: {str(e)}")
+        
+        # Register the supplier
+        return self.run_test(
+            "Register Supplier",
+            "POST",
+            "auth/register",
+            200,
+            data=registration_data
+        )
 
     def test_auth_endpoints(self):
         """Test authentication-related endpoints"""
