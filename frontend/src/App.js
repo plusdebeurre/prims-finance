@@ -1330,11 +1330,11 @@ const ContractDetail = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const contractResponse = await axios.get(`${API}/contracts/${contractId}`);
+        const contractResponse = await contractsAPI.getById(contractId);
         setContract(contractResponse.data);
         
         // Fetch supplier details
-        const supplierResponse = await axios.get(`${API}/suppliers/${contractResponse.data.supplier_id}`);
+        const supplierResponse = await suppliersAPI.getById(contractResponse.data.supplier_id);
         setSupplier(supplierResponse.data);
         
         setLoading(false);
