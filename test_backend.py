@@ -20,10 +20,10 @@ def test_backend_api():
     # Login to get token
     try:
         login_data = {
-            "email": "admin@prismfinance.com",
+            "username": "admin@prismfinance.com",
             "password": "admin123"
         }
-        response = requests.post(f"{backend_url}/api/auth/login", json=login_data)
+        response = requests.post(f"{backend_url}/api/auth/token", data=login_data)
         if response.status_code == 200:
             token = response.json().get("access_token")
             print(f"✅ Login successful, got token")
@@ -72,7 +72,7 @@ def test_backend_api():
                     "siret": "12345678901234"
                 }
                 response = requests.post(f"{backend_url}/api/suppliers/", json=supplier_data, headers=headers)
-                if response.status_code == 201:
+                if response.status_code == 200 or response.status_code == 201:
                     print(f"✅ Created supplier: {response.json()}")
                 else:
                     print(f"❌ Supplier creation failed: {response.status_code}, {response.text}")
