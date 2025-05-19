@@ -94,12 +94,19 @@ export function AuthProvider({ children }) {
   };
 
   // Register function
-  const register = async (userData) => {
+  const signup = async (userData) => {
     setError(null);
     
     try {
-      const response = await axios.post(`${API}/auth/register`, userData);
-      return response.data;
+      // First register the user
+      const registerResponse = await axios.post(`${API}/auth/register`, userData);
+      console.log('Register response:', registerResponse.data);
+      
+      // Then automatically log them in
+      const { email, password } = userData;
+      await login(email, password);
+      
+      return true;
     } catch (err) {
       console.error('Registration error:', err);
       setError(
@@ -168,7 +175,7 @@ export function AuthProvider({ children }) {
   };
 
   // Update user profile
-  const updateProfile = async (userData) => {
+  const updateUserProfile = async (userData) => {
     setError(null);
     
     try {
@@ -215,11 +222,12 @@ export function AuthProvider({ children }) {
     currentUser,
     login,
     logout,
-    register,
+    signup,
+    register: signup, // Alias for signup
     requestPasswordReset,
     resetPassword,
     changePassword,
-    updateProfile,
+    updateUserProfile,
     getUserProfile,
     error,
     setError,
