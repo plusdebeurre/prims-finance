@@ -51,7 +51,7 @@ const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      console.log("Attempting to login with:", email, "Backend URL:", API);
+      console.log("Attempting to login with:", email);
       const response = await axios.post(`${API}/auth/token`, new URLSearchParams({
         'username': email,
         'password': password
