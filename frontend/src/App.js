@@ -548,9 +548,9 @@ const SupplierForm = () => {
     
     try {
       if (supplierId) {
-        await axios.put(`${API}/suppliers/${supplierId}`, supplier);
+        await suppliersAPI.update(supplierId, supplier);
       } else {
-        await axios.post(`${API}/suppliers`, supplier);
+        await suppliersAPI.create(supplier);
       }
       
       navigate("/suppliers");
