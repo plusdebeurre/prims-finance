@@ -47,7 +47,7 @@ const AuthProvider = ({ children }) => {
         }
       });
       
-      console.log("Login response:", response.data);
+      console.log("Login successful!");
       const { access_token, user_id, is_admin, name } = response.data;
       
       // Store token and user info
